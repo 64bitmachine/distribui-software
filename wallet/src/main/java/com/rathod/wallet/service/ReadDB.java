@@ -1,16 +1,23 @@
-package com.rathod.wallet;
+package com.rathod.wallet.service;
 
 import java.util.ArrayList;
 
+import org.springframework.stereotype.Service;
+
+import com.rathod.wallet.dto.Customer;
+
+import lombok.AllArgsConstructor;
+
+@Service
 public class ReadDB {
     
 
     // database text file location
-    private static final String DB_FILE = "src/main/resources/initialData.txt";
+    private final String DB_FILE = "src/main/resources/initialData.txt";
 
     // read the text file and return the list of customers
-    public static ArrayList<Customer> readDB() {
         ArrayList<Customer> customers = new ArrayList<>();
+        public ArrayList<Customer> readCustomerIDFromFile() {
         try {
             // read the text file
             String line;

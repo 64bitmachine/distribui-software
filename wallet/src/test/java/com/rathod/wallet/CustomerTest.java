@@ -2,6 +2,8 @@ package com.rathod.wallet;
 
 import org.junit.jupiter.api.Test;
 
+import com.rathod.wallet.dto.Customer;
+
 public class CustomerTest {
     @Test
     void testGetAmount() {
@@ -12,7 +14,7 @@ public class CustomerTest {
     @Test
     void testGetId() {
         Customer customer = new Customer(1, 100.0);
-        assert customer.getId() == 1;
+        assert customer.getCustId() == 1;
     }
 
     @Test
@@ -25,7 +27,7 @@ public class CustomerTest {
     @Test
     void testSetId() {
         Customer customer = new Customer(1, 100.0);
-        customer.setId(2);
-        assert customer.getId() == 2;
+        customer.setCustId(2);
+        assert customer.getCustId() == 2;
     }
 }
