@@ -1,23 +1,43 @@
 package com.rathod.restaurant.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.rathod.restaurant.dto.RefillIAndAcceptItemDto;
+import com.rathod.restaurant.service.RestaurantService;
+
+import lombok.AllArgsConstructor;
+
 @RestController
+@AllArgsConstructor
+@RequestMapping("/")
 public class RestaurantController {
 
-	public void reinitalize()
+	private final RestaurantService restaurantService;
+	@PostMapping("/reInitialize")
+	public ResponseEntity<String> reInitialize() throws Exception
 	{
+		restaurantService.reInitialize();
 		
+		return new ResponseEntity<>("Read Initializer file is successful", HttpStatus.CREATED);
 	}
 	
-	public void refillItems()
+	@PostMapping("/refillItem")
+	public ResponseEntity<String> refillItem(@RequestBody RefillIAndAcceptItemDto refill)
 	{
-		
+		restaurantService.refillItem(refill);
+		return new ResponseEntity<String>("Refill Succesful", HttpStatus.CREATED);
 	}
 	
-	public void acceptOrder()
+	@PostMapping("/acceptOrder")
+	public ResponseEntity<String> acceptOrder(@RequestBody RefillIAndAcceptItemDto accept)
 	{
-		
-		
+		if(restaurantService.acceptOrder(accept))
+			return new ResponseEntity<String>("Order Accepted",HttpStatus.CREATED);
+		return new ResponseEntity<String>("Order Failed",HttpStatus.GONE);
 	}
 }
