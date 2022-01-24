@@ -1,6 +1,4 @@
-package com.rathod.wallet.dto;
-
-import java.io.Serializable;
+package com.rathod.wallet.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

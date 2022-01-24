@@ -2,7 +2,7 @@ package com.rathod.wallet;
 
 import org.junit.jupiter.api.Test;
 
-import com.rathod.wallet.dto.Customer;
+import com.rathod.wallet.entity.Customer;
 
 public class CustomerTest {
     @Test

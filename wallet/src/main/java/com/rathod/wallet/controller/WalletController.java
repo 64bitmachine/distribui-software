@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.rathod.wallet.dto.Customer;
+import com.rathod.wallet.entity.Customer;
 import com.rathod.wallet.service.ReadDB;
 import com.rathod.wallet.service.WalletService;
 
 import lombok.AllArgsConstructor;
 
 /**
- * @author rathod
+ * @author Rathod,Arman
  * This class handle wallet operations like deposit, withdraw
  */
 @RestController
@@ -29,19 +29,19 @@ public class WalletController {
 	private final ReadDB readDB;
 	
     @RequestMapping(value = "/addBalance", method = RequestMethod.POST)
-    public ResponseEntity<Customer> deposit(@RequestBody Customer customer) {
+    public ResponseEntity<String> deposit(@RequestBody Customer customer) {
         walletService.updateBalance(customer);
-        return new ResponseEntity<Customer>(HttpStatus.CREATED);
+        return new ResponseEntity<String>("Deposit Done",HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/deductBalance", method = RequestMethod.POST)
-    public ResponseEntity<Customer> withdraw(@RequestBody Customer customer) { 
+    public ResponseEntity<String> withdraw(@RequestBody Customer customer) { 
     	
     	
     	boolean withdrawComplete = walletService.withdrawBalance(customer);
     	
-        return withdrawComplete ? new ResponseEntity<Customer>(HttpStatus.CREATED) : 
-        	new  ResponseEntity<Customer>(HttpStatus.GONE);
+        return withdrawComplete ? new ResponseEntity<String>("Balance is deducted!",HttpStatus.CREATED) : 
+        	new  ResponseEntity<String>("Unable to deduct!", HttpStatus.GONE);
     }
     /**
      * quering the balance of a customer    
@@ -53,7 +53,9 @@ public class WalletController {
         Customer customer = walletService.getCustomer(customerId);
 
         if (customer == null) {
-            return new ResponseEntity<Customer>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<Customer>(
+            		
+            		HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<Customer>(customer, HttpStatus.OK);
     }
@@ -63,7 +65,7 @@ public class WalletController {
 
        // TODO: logic for reading from text file and initializing the customers
         walletService.getCustomerList();
-        return new ResponseEntity<String>("User Db is updated",HttpStatus.CREATED);
+        return new ResponseEntity<String>("Initialization is completed!",HttpStatus.CREATED);
     }
 
     

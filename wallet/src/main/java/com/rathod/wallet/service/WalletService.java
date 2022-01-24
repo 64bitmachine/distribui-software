@@ -4,8 +4,7 @@ import java.util.ArrayList;
 
 import org.springframework.stereotype.Service;
 
-import com.rathod.wallet.dto.Customer;
-
+import com.rathod.wallet.entity.Customer;
 
 import lombok.AllArgsConstructor;
 
@@ -13,7 +12,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class WalletService {
 
-	private static ReadDB readDB;
+	private final ReadDB readDB;
     private ArrayList<Customer> customers = new ArrayList<>();
     
     
@@ -65,7 +64,6 @@ public class WalletService {
     
     public void getCustomerList()
     {
-    	readDB = new ReadDB();
     	customers = readDB.readCustomerIDFromFile();
     	for(Customer customer : customers) {
     		System.out.println(customer.getCustId());
