@@ -2,7 +2,9 @@ package com.rathod.delivery.service;
 
 import java.util.List;
 
+import com.rathod.delivery.dto.OrderInvoice;
 import com.rathod.delivery.dto.OrderPlaced;
+import com.rathod.delivery.dto.PlaceOrder;
 import com.rathod.delivery.entity.DeliveryAgent;
 import com.rathod.delivery.entity.DeliveryAgentStatus;
 import com.rathod.delivery.entity.Order;
@@ -67,6 +69,19 @@ public class DeliveryService {
                 return new OrderPlaced(num, order.getStatus(), order.getAgentId());
             }
         }
+        return null;
+    }
+
+    public void agentSignIn(int agentId) {
+    }
+
+    public void agentSignOut(int agentId) {
+    }
+
+    public void orderDelivered(int orderId) {
+    }
+
+    public OrderInvoice placeOrder(PlaceOrder placeOrder) {
         return null;
     }
 }
