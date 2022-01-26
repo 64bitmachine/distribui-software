@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Order {
+public class Order implements Comparable<Order> {
     private int orderId;
     private int custId;
     private int restId;
@@ -15,4 +15,9 @@ public class Order {
     private int qty;
     private OrderStatus status;
     private int agentId;
+
+    @Override
+    public int compareTo(Order o) {
+        return this.orderId - o.orderId;
+    }
 }

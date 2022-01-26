@@ -1,6 +1,8 @@
 package com.rathod.delivery.service;
 
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
 import com.rathod.delivery.dto.OrderInvoice;
 import com.rathod.delivery.dto.OrderPlaced;
@@ -20,11 +22,12 @@ public class DeliveryService {
     
     private final ReadDB readDB;
     private List<DeliveryAgent> deliveryAgents;
-    private List<Order> orders;
+    private Queue<Order> orders;
 
     public DeliveryService() {
         readDB = new ReadDB();
         deliveryAgents = readDB.readDeliveryAgentIDFromFile();
+        orders = new PriorityQueue<>();
     }
 
     /**
@@ -72,10 +75,46 @@ public class DeliveryService {
         return null;
     }
 
+    /**
+     * sign in the agent and assign the order to the agent
+     * @param agentId
+     */
     public void agentSignIn(int agentId) {
+        for (DeliveryAgent agent : deliveryAgents) {
+            if (agent.getAgentId() == agentId) {
+
+                // if agent is signed out then sign in
+                if (agent.getStatus() == DeliveryAgentStatus.SIGNED_OUT) {
+                    for (Order order : orders) {
+                
+                        // if order is unassigned then assign it to the agent
+                        if (order.getStatus() == OrderStatus.UNASSIGNED) {
+                            agent.setStatus(DeliveryAgentStatus.UNAVAILABLE);
+                            order.setStatus(OrderStatus.ASSIGNED);
+                            order.setAgentId(agentId);
+                            return;
+                        }
+                    }
+                    agent.setStatus(DeliveryAgentStatus.AVAILABLE);
+                }
+                break;
+            }
+        }
     }
 
+    /**
+     * sign out the agent
+     * @param agentId
+     */
     public void agentSignOut(int agentId) {
+        for (DeliveryAgent agent : deliveryAgents) {
+            if (agent.getAgentId() == agentId) {
+                if (agent.getStatus() == DeliveryAgentStatus.AVAILABLE) {
+                    agent.setStatus(DeliveryAgentStatus.SIGNED_OUT);
+                }
+                break;
+            }
+        }
     }
 
     public void orderDelivered(int orderId) {
