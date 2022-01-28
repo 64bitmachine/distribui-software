@@ -30,10 +30,10 @@ public class DeliveryController {
     public ResponseEntity<OrderInvoice> requestOrder(@RequestBody PlaceOrder placeOrder) {
         OrderInvoice orderInvoice = deliveryService.placeOrder(placeOrder);
         if (orderInvoice != null) {
-            return new ResponseEntity<>(HttpStatus.OK);
+            return new ResponseEntity<>(orderInvoice, HttpStatus.OK);
         }
         else
-            return new ResponseEntity<>(HttpStatus.GONE);
+            return new ResponseEntity<>(orderInvoice ,HttpStatus.GONE);
     }
 
     @PostMapping("/agentSignIn")

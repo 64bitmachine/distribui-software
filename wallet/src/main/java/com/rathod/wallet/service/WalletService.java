@@ -18,7 +18,7 @@ public class WalletService {
     
     public boolean withdrawBalance(Customer customer) {
         Customer c = getCustomer(customer.getCustId());
-        if (c.getAmount() < customer.getAmount()) {
+        if (c == null || c.getAmount() < customer.getAmount()) {
         	
         	return false;
             //return new ResponseEntity<Customer>(HttpStatus.GONE);

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RefillIAndAcceptItemDto {
+public class RefillAndAcceptItemDto {
 
 	private Integer restId;
 	private Integer itemId;

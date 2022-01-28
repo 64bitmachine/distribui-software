@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.rathod.restaurant.dto.RefillIAndAcceptItemDto;
+import com.rathod.restaurant.dto.RefillAndAcceptItemDto;
+import com.rathod.restaurant.entity.Item;
 import com.rathod.restaurant.service.RestaurantService;
 
 import lombok.AllArgsConstructor;
@@ -27,17 +28,18 @@ public class RestaurantController {
 	}
 	
 	@PostMapping("/refillItem")
-	public ResponseEntity<String> refillItem(@RequestBody RefillIAndAcceptItemDto refill)
+	public ResponseEntity<String> refillItem(@RequestBody RefillAndAcceptItemDto refill)
 	{
 		restaurantService.refillItem(refill);
 		return new ResponseEntity<String>("Refill Succesful", HttpStatus.CREATED);
 	}
 	
 	@PostMapping("/acceptOrder")
-	public ResponseEntity<String> acceptOrder(@RequestBody RefillIAndAcceptItemDto accept)
+	public ResponseEntity<Item> acceptOrder(@RequestBody RefillAndAcceptItemDto accept)
 	{
-		if(restaurantService.acceptOrder(accept))
-			return new ResponseEntity<String>("Order Accepted",HttpStatus.CREATED);
-		return new ResponseEntity<String>("Order Failed",HttpStatus.GONE);
+		Item item = restaurantService.acceptOrder(accept);
+		if(item != null)
+			return new ResponseEntity<Item>(item,HttpStatus.CREATED);
+		return new ResponseEntity<Item>(item,HttpStatus.GONE);
 	}
 }
