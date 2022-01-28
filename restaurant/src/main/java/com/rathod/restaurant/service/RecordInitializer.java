@@ -39,10 +39,10 @@ public class RecordInitializer {
 			BufferedReader bReader = new BufferedReader(new FileReader(FILE_PATH));
 			String line = null;
 			while((line = bReader.readLine())!=null) {
-				log.info("Restaurant : "+ line);
 				String[] split = line.split("\\s+");
 				if(split.length == 2)
 				{
+					log.info("Restaurant : "+ line);
 					Integer restaurantId  = Integer.parseInt(split[0]);
 					Integer numberOFItems = Integer.parseInt(split[1]);
 					
@@ -65,6 +65,7 @@ public class RecordInitializer {
 					restaurants.add(restaurant);
 				}
 			}
+			bReader.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			throw new RestaurantException("There is some problem in reading the Initializer File");

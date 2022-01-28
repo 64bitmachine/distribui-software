@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.rathod.restaurant.dto.RefillIAndAcceptItemDto;
+import com.rathod.restaurant.dto.RefillAndAcceptItemDto;
 import com.rathod.restaurant.entity.Item;
 import com.rathod.restaurant.entity.Restaurant;
 
@@ -21,10 +21,11 @@ public class RestaurantService {
 	private List<Restaurant> restaurants;
 	
 	public void reInitialize() throws Exception {
+		restaurants.clear();
 		restaurants = recordInitializer.readInitializerFile();
 	}
 
-	public boolean refillItem(RefillIAndAcceptItemDto refill) {
+	public boolean refillItem(RefillAndAcceptItemDto refill) {
 		
 		Boolean itemExistFlag = false;
 		for(Restaurant restaurant: restaurants)
@@ -47,8 +48,8 @@ public class RestaurantService {
 		return itemExistFlag;
 	}
 
-	public boolean acceptOrder(RefillIAndAcceptItemDto accept) {
-		Boolean sufficientQuantityFlag = false;
+	public Item acceptOrder(RefillAndAcceptItemDto accept) {
+	    Item acceptedItem = null;
 		for(Restaurant restaurant: restaurants)
 		{
 			if(restaurant.getRestaurantId().equals(accept.getRestId()))
@@ -59,14 +60,14 @@ public class RestaurantService {
 					{
 						log.info("Item before accept :" + item.getItemId()+" ||  "+item.getQuantity());
 						item.setQuantity(item.getQuantity() - accept.getQty());
-						sufficientQuantityFlag = true;
+						acceptedItem = item; 
 						log.info("Item after accept :" + item.getItemId()+" ||  "+item.getQuantity());
 					}
 				}
 			}
 		}
 		
-		return sufficientQuantityFlag;
+		return acceptedItem;
 	}
 	
 	

@@ -40,8 +40,8 @@ public class WalletController {
     	
     	boolean withdrawComplete = walletService.withdrawBalance(customer);
     	
-        return withdrawComplete ? new ResponseEntity<String>("Balance is deducted!",HttpStatus.CREATED) : 
-        	new  ResponseEntity<String>("Unable to deduct!", HttpStatus.GONE);
+        return withdrawComplete ? new ResponseEntity<String>("Successful",HttpStatus.CREATED) : 
+        	new  ResponseEntity<String>("Unsuccessful", HttpStatus.GONE);
     }
     /**
      * quering the balance of a customer    
