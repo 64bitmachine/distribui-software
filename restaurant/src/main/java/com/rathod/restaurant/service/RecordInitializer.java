@@ -2,7 +2,7 @@ package com.rathod.restaurant.service;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +36,9 @@ public class RecordInitializer {
 	{
 		try {
 			Resource resource = new ClassPathResource(FILE_PATH);
-			BufferedReader bReader = new BufferedReader(new FileReader(resource.getFile()));
+			BufferedReader bReader = new BufferedReader(
+				new InputStreamReader(resource.getInputStream()));
+
 			String line = null;
 			while((line = bReader.readLine())!=null) {
 				String[] split = line.split("\\s+");
