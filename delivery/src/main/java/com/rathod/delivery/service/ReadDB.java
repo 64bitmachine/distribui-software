@@ -6,6 +6,8 @@ import com.rathod.delivery.entity.DeliveryAgentStatus;
 
 import java.util.ArrayList;
 
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import lombok.AllArgsConstructor;
@@ -25,7 +27,11 @@ public class ReadDB {
         try {
             // read the text file
             String line;
-            java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(DB_FILE));
+            // use resource class to read the file
+            Resource resource = new ClassPathResource(DB_FILE);
+            // read the file
+            java.io.BufferedReader br = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(resource.getInputStream()));
             int starCount = 0;
             while ((line = br.readLine()) != null) {
 
