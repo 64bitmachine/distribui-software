@@ -1,7 +1,5 @@
 package com.rathod.wallet.controller;
 
-import java.util.ArrayList;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rathod.wallet.entity.Customer;
-import com.rathod.wallet.service.ReadDB;
 import com.rathod.wallet.service.WalletService;
 
 import lombok.AllArgsConstructor;
@@ -26,7 +23,6 @@ public class WalletController {
 	
 
 	private final WalletService walletService;
-	private final ReadDB readDB;
 	
     @RequestMapping(value = "/addBalance", method = RequestMethod.POST)
     public ResponseEntity<String> deposit(@RequestBody Customer customer) {
@@ -62,8 +58,6 @@ public class WalletController {
 
     @RequestMapping(value = "/reInitialize", method = RequestMethod.POST)
     public ResponseEntity<String> init() {
-
-       // TODO: logic for reading from text file and initializing the customers
         walletService.getCustomerList();
         return new ResponseEntity<String>("Initialization is completed!",HttpStatus.CREATED);
     }
