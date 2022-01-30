@@ -3,13 +3,12 @@ package com.rathod.restaurant.service;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.sound.sampled.Line;
-
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import com.rathod.restaurant.CONSTANTS;
@@ -36,7 +35,8 @@ public class RecordInitializer {
 	public List<Restaurant> readInitializerFile() throws Exception
 	{
 		try {
-			BufferedReader bReader = new BufferedReader(new FileReader(FILE_PATH));
+			Resource resource = new ClassPathResource(FILE_PATH);
+			BufferedReader bReader = new BufferedReader(new FileReader(resource.getFile()));
 			String line = null;
 			while((line = bReader.readLine())!=null) {
 				String[] split = line.split("\\s+");
@@ -67,7 +67,6 @@ public class RecordInitializer {
 			}
 			bReader.close();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			throw new RestaurantException("There is some problem in reading the Initializer File");
 		}
 		return restaurants;
