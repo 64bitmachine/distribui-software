@@ -21,7 +21,7 @@ start:
 stop:
 	docker stop wallet restaurant delivery
 
-clean: stop
+clean:
 	docker rm -f wallet
 	docker rm -f restaurant
 	docker rm -f delivery
