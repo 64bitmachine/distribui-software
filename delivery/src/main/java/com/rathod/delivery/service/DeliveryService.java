@@ -21,7 +21,6 @@ import com.rathod.delivery.entity.OrderStatus;
 
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.catalina.connector.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -86,7 +85,7 @@ public class DeliveryService {
 
         // all agents - signed out
         for (DeliveryAgent agent : deliveryAgents) {
-            agent.setStatus(DeliveryAgentStatus.SIGNED_OUT);
+            agent.setStatus(DeliveryAgentStatus.signed_out);
         }
     }
 
@@ -111,7 +110,7 @@ public class DeliveryService {
     public OrderPlaced getOrder(int num) {
         for (Order order : orders) {
             if (order.getOrderId() == num) {
-                if (order.getStatus() == OrderStatus.UNASSIGNED) {
+                if (order.getStatus() == OrderStatus.unassigned) {
                     return new OrderPlaced(num, order.getStatus(), -1);
                 }
                 return new OrderPlaced(num, order.getStatus(), order.getAgentId());
@@ -129,18 +128,18 @@ public class DeliveryService {
             if (agent.getAgentId() == agentId) {
 
                 // if agent is signed out then sign in
-                if (agent.getStatus() == DeliveryAgentStatus.SIGNED_OUT) {
+                if (agent.getStatus() == DeliveryAgentStatus.signed_out) {
                     for (Order order : orders) {
                 
                         // if order is unassigned then assign it to the agent
-                        if (order.getStatus() == OrderStatus.UNASSIGNED) {
-                            agent.setStatus(DeliveryAgentStatus.UNAVAILABLE);
-                            order.setStatus(OrderStatus.ASSIGNED);
+                        if (order.getStatus() == OrderStatus.unassigned) {
+                            agent.setStatus(DeliveryAgentStatus.unavailable);
+                            order.setStatus(OrderStatus.assigned);
                             order.setAgentId(agentId);
                             return;
                         }
                     }
-                    agent.setStatus(DeliveryAgentStatus.AVAILABLE);
+                    agent.setStatus(DeliveryAgentStatus.available);
                 }
                 break;
             }
@@ -154,8 +153,8 @@ public class DeliveryService {
     public void agentSignOut(int agentId) {
         for (DeliveryAgent agent : deliveryAgents) {
             if (agent.getAgentId() == agentId) {
-                if (agent.getStatus() == DeliveryAgentStatus.AVAILABLE) {
-                    agent.setStatus(DeliveryAgentStatus.SIGNED_OUT);
+                if (agent.getStatus() == DeliveryAgentStatus.available) {
+                    agent.setStatus(DeliveryAgentStatus.signed_out);
                 }
                 break;
             }
@@ -168,23 +167,22 @@ public class DeliveryService {
     	 * @Todo assign this delivery agent to any pending order.
     	 */
     	Order order = searchForOrder(orderId);
-    	if(order == null || order.getStatus() != OrderStatus.ASSIGNED) return;
+    	if(order == null || order.getStatus() != OrderStatus.assigned) return;
     	
-    	order.setStatus(OrderStatus.DELIVERED);
+    	order.setStatus(OrderStatus.delivered);
     	int deliveryAgentId = order.getAgentId();
     	DeliveryAgent deliveryAgent = findDeliveryAgentById(deliveryAgentId);
-    	deliveryAgent.setStatus(DeliveryAgentStatus.AVAILABLE);
+    	deliveryAgent.setStatus(DeliveryAgentStatus.available);
     	
     	Order order2 = findLowestOrderIdThatIsUnassigned();
     	if(order2 != null)
     	{
-    		deliveryAgent.setStatus(DeliveryAgentStatus.UNAVAILABLE);
+    		deliveryAgent.setStatus(DeliveryAgentStatus.unavailable);
     		order2.setAgentId(deliveryAgentId);
     	}
     }
 
     private DeliveryAgent findDeliveryAgentById(int deliveryAgentId) {
-		// TODO Auto-generated method stub
     	for(DeliveryAgent agent : deliveryAgents)
     	{
     		if(agent.getAgentId() == deliveryAgentId)
@@ -194,16 +192,14 @@ public class DeliveryService {
 	}
 
 	private Order findLowestOrderIdThatIsUnassigned() {
-		// TODO Auto-generated method stub
     	for(Order order : orders) {
-    		if(order.getStatus() == OrderStatus.UNASSIGNED)
+    		if(order.getStatus() == OrderStatus.unassigned)
     			return order;
     	}
 		return null;
 	}
 
 	private Order searchForOrder(int orderId) {
-		// TODO Auto-generated method stub
     	for(Order order : orders)
     	{
     		if(order.getOrderId() == orderId)
@@ -258,14 +254,15 @@ public class DeliveryService {
     	Order order = getOrderObject(placeOrder,orderId);
     	orderId += 1;
     	
-    	int deliveryAgentId = findLowestAvailableAgentId();
-    	if(deliveryAgentId != -1)
+    	DeliveryAgent agent = findLowestAvailableAgentId();
+    	if(agent != null)
     	{
-    		order.setAgentId(deliveryAgentId);
-    		order.setStatus(OrderStatus.ASSIGNED);
+    		order.setAgentId(agent.getAgentId());
+    		order.setStatus(OrderStatus.assigned);
+			agent.setStatus(DeliveryAgentStatus.unavailable);
     	}
     	orders.add(order);
-    	return new OrderInvoice(orderId);
+    	return new OrderInvoice(order.getOrderId());
     }
     
     private Order getOrderObject(PlaceOrder placeOrder,int orderId) {
@@ -275,19 +272,19 @@ public class DeliveryService {
     	order.setItemId(placeOrder.getItemId());
     	order.setRestId(placeOrder.getRestId());
     	order.setQty(placeOrder.getQty());
-    	order.setStatus(OrderStatus.UNASSIGNED);
+    	order.setStatus(OrderStatus.unassigned);
 		return order;
 	}
 
-	public int findLowestAvailableAgentId()
+	public DeliveryAgent findLowestAvailableAgentId()
     {
     	Collections.sort(deliveryAgents, Comparator.comparing(DeliveryAgent::getAgentId));
     	for(DeliveryAgent agent : deliveryAgents) {
-    		if(agent.getStatus() == DeliveryAgentStatus.AVAILABLE){
-    			return agent.getAgentId();
+    		if(agent.getStatus() == DeliveryAgentStatus.available){
+    			return agent;
     		}
     	}
     	
-    	return -1;
+    	return null;
     }
 }
