@@ -60,7 +60,7 @@ public class RestaurantService {
 					{
 						log.info("Item before accept :" + item.getItemId()+" ||  "+item.getQuantity());
 						item.setQuantity(item.getQuantity() - accept.getQty());
-						acceptedItem = item; 
+						acceptedItem = new Item(item.getItemId(), item.getPrice(), accept.getQty());
 						log.info("Item after accept :" + item.getItemId()+" ||  "+item.getQuantity());
 					}
 				}

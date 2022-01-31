@@ -23,8 +23,11 @@ public class ReadDB {
     	DB_FILE = CONSTANTS.INIT_REC_FILE_PATH;
     }
     // read the text file and return the list of customers
-        ArrayList<Customer> customers = new ArrayList<>();
+        
         public ArrayList<Customer> readCustomerIDFromFile() {
+
+        ArrayList<Customer> customers = new ArrayList<>();
+
         try {
             // read the text file
             String line;
