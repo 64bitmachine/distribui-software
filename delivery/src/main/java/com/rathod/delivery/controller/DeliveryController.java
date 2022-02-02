@@ -30,7 +30,7 @@ public class DeliveryController {
     public ResponseEntity<OrderInvoice> requestOrder(@RequestBody PlaceOrder placeOrder) {
         OrderInvoice orderInvoice = deliveryService.placeOrder(placeOrder);
         if (orderInvoice != null) {
-            return new ResponseEntity<>(orderInvoice, HttpStatus.OK);
+            return new ResponseEntity<>(orderInvoice, HttpStatus.CREATED);
         }
         else
             return new ResponseEntity<>(orderInvoice ,HttpStatus.GONE);

@@ -34,6 +34,9 @@ public class RecordInitializer {
 	
 	public List<Restaurant> readInitializerFile() throws Exception
 	{
+
+		restaurants.clear();
+
 		try {
 			Resource resource = new ClassPathResource(FILE_PATH);
 			BufferedReader bReader = new BufferedReader(
