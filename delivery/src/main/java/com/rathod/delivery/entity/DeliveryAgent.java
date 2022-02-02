@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class DeliveryAgent {
     private int agentId;
-    private DeliveryAgentStatus status;
+    private String status;
 }

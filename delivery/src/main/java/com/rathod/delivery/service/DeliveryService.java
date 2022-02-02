@@ -82,7 +82,7 @@ public class DeliveryService {
     public void reinitialize() {
         // delete all orders
         orders.clear();
-
+        orderId = 1000;	
         // all agents - signed out
         for (DeliveryAgent agent : deliveryAgents) {
             agent.setStatus(DeliveryAgentStatus.signed_out);
@@ -128,7 +128,7 @@ public class DeliveryService {
             if (agent.getAgentId() == agentId) {
 
                 // if agent is signed out then sign in
-                if (agent.getStatus() == DeliveryAgentStatus.signed_out) {
+                if (agent.getStatus().equals(DeliveryAgentStatus.signed_out)) {
                     for (Order order : orders) {
                 
                         // if order is unassigned then assign it to the agent
@@ -153,7 +153,7 @@ public class DeliveryService {
     public void agentSignOut(int agentId) {
         for (DeliveryAgent agent : deliveryAgents) {
             if (agent.getAgentId() == agentId) {
-                if (agent.getStatus() == DeliveryAgentStatus.available) {
+                if (agent.getStatus().equals(DeliveryAgentStatus.available)) {
                     agent.setStatus(DeliveryAgentStatus.signed_out);
                 }
                 break;
@@ -248,8 +248,20 @@ public class DeliveryService {
     	catch (Exception e) {
     		log.error(e.getMessage());
 		}
+    	
     	if(isSuccessful == null || isSuccessful.equals("Unsuccessful"))
+    	{
+    		try {
+    		restaurantWebClient.post().uri("/refillItem")
+        			.bodyValue(accept).retrieve()
+        			.bodyToMono(String.class).block();
+    		}
+    		catch (Exception e) {
+				// TODO: handle exception
+    			log.error(e.getMessage());
+			}
     		return null;
+    	}
   
     	Order order = getOrderObject(placeOrder,orderId);
     	orderId += 1;
@@ -280,7 +292,7 @@ public class DeliveryService {
     {
     	Collections.sort(deliveryAgents, Comparator.comparing(DeliveryAgent::getAgentId));
     	for(DeliveryAgent agent : deliveryAgents) {
-    		if(agent.getStatus() == DeliveryAgentStatus.available){
+    		if(agent.getStatus().equals(DeliveryAgentStatus.available)){
     			return agent;
     		}
     	}
