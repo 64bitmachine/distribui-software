@@ -2,9 +2,9 @@ network:
 	docker network create --driver bridge foodapp-network
 
 jars:
-	cd wallet && ./mvnw package && \
-	cd ../delivery && ./mvnw package && \
-	cd ../restaurant && ./mvnw package && \
+	cd wallet && ./mvnw -DskipTests package && \
+	cd ../delivery && ./mvnw -DskipTests package && \
+	cd ../restaurant && ./mvnw -DskipTests package && \
 	cd ..
 
 images:
