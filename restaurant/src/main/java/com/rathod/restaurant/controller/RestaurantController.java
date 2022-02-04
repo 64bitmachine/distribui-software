@@ -30,14 +30,22 @@ public class RestaurantController {
 	@PostMapping("/refillItem")
 	public ResponseEntity<String> refillItem(@RequestBody RefillAndAcceptItemDto refill)
 	{
-		restaurantService.refillItem(refill);
+		if(refill.getQty()>0)
+		{
+			restaurantService.refillItem(refill);
+		}
 		return new ResponseEntity<String>("Refill Succesful", HttpStatus.CREATED);
 	}
 	
 	@PostMapping("/acceptOrder")
 	public ResponseEntity<Item> acceptOrder(@RequestBody RefillAndAcceptItemDto accept)
 	{
-		Item item = restaurantService.acceptOrder(accept);
+		//@Todo add check for non positive quantity
+		Item  item = null;
+		if(accept.getQty() > 0)
+		{
+			item = restaurantService.acceptOrder(accept);
+		}
 		if(item != null)
 			return new ResponseEntity<Item>(item,HttpStatus.CREATED);
 		return new ResponseEntity<Item>(item,HttpStatus.GONE);

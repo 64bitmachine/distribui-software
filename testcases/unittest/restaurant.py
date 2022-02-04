@@ -121,4 +121,4 @@ if __name__ == "__main__":
                 {"restId": 102, "itemId": 3, "qty": 0},
                 {"restId": 102, "itemId": 4, "qty": 0}]
     
-    testOrder(18, order, "acceptOrder", 201)
+    testOrder(18, order, "acceptOrder", 410)

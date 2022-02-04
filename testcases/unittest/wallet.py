@@ -41,6 +41,7 @@ def testGetBalance(t, custId, balance, statuscode):
             test_pass()
         else:
             test_fail()
+            print(response.json())
     except:
         test_fail()
 

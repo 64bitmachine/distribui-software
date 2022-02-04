@@ -179,6 +179,7 @@ public class DeliveryService {
     	{
     		deliveryAgent.setStatus(DeliveryAgentStatus.unavailable);
     		order2.setAgentId(deliveryAgentId);
+			order2.setStatus(OrderStatus.assigned);
     	}
     }
 
@@ -257,7 +258,7 @@ public class DeliveryService {
         			.bodyToMono(String.class).block();
     		}
     		catch (Exception e) {
-				// TODO: handle exception
+
     			log.error(e.getMessage());
 			}
     		return null;

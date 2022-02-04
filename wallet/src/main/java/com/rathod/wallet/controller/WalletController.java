@@ -26,15 +26,19 @@ public class WalletController {
 	
     @RequestMapping(value = "/addBalance", method = RequestMethod.POST)
     public ResponseEntity<String> deposit(@RequestBody Customer customer) {
-        walletService.updateBalance(customer);
+    	if(customer.getAmount() > 0)
+        {
+            walletService.updateBalance(customer);              
+        }
         return new ResponseEntity<String>("Deposit Done",HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/deductBalance", method = RequestMethod.POST)
     public ResponseEntity<String> withdraw(@RequestBody Customer customer) { 
-    	
-    	
-    	boolean withdrawComplete = walletService.withdrawBalance(customer);
+        boolean withdrawComplete = false;
+        
+    	if(customer.getAmount() >= 0)
+    	    withdrawComplete = walletService.withdrawBalance(customer);
     	
         return withdrawComplete ? new ResponseEntity<String>("Successful",HttpStatus.CREATED) : 
         	new  ResponseEntity<String>("Unsuccessful", HttpStatus.GONE);
