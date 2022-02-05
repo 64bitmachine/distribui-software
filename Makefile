@@ -1,6 +1,3 @@
-network:
-	docker network create --driver bridge foodapp-network
-
 jars:
 	cd wallet && ./mvnw -DskipTests package && \
 	cd ../delivery && ./mvnw -DskipTests package && \
@@ -14,9 +11,9 @@ images:
 	docker images
 
 containers:
-	docker run -d --name wallet -p 8082:8082 --network foodapp-network wallet
-	docker run -d --name restaurant -p 8080:8080 --network foodapp-network restaurant
-	docker run -d --name delivery -p 8081:8081 --network foodapp-network delivery
+	docker run -d --name wallet --network host wallet
+	docker run -d --name restaurant --network host restaurant
+	docker run -d --name delivery --network host delivery
 
 start:
 	docker start wallet restaurant delivery
@@ -31,4 +28,3 @@ clean:
 	docker rmi -f wallet
 	docker rmi -f restaurant
 	docker rmi -f delivery
-	docker network rm foodapp-network
