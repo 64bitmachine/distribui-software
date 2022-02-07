@@ -47,6 +47,7 @@ def testGetBalance(t, custId, balance, statuscode):
 
 '''
 test case for reinitialize
+@param t: test case number
 '''
 def testReinitialize(t):
     print(str(t) + ".\twallet request\t\t- post /reInitialize\t\t", end="")
@@ -96,7 +97,6 @@ def testDeductBalance(t, custId, amount, statuscode):
         test_fail()
 
 if __name__ == "__main__":
-    customer_ids = [301, 302, 303]
 
     print_box("\033[93mWallet Service API Test\033[1;32;40m")
 
@@ -107,6 +107,8 @@ if __name__ == "__main__":
     testGetBalance(2, 301, 2000, 200)
     testGetBalance(3, 302, 2000, 200)
     testGetBalance(4, 303, 2000, 200)
+    testGetBalance(4, 304, 2000, 200)
+    testGetBalance(4, 305, 2000, 200)
 
     # ---------------------  /addBalance  ---------------------
     testAddBalance(5, 301, 100, 201)

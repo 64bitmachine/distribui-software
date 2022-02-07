@@ -63,7 +63,7 @@ test case for get agent details
 @param t - test case number
 @param agentId - agent id
 @param agentStatus - agent status
-@param statuscode - http status code
+@param statuscode - expected http status code
 '''
 def testGetAgent(t, agentId, agentStatus, statuscode):
     print(str(t) + ".\tdelivery request\t- get /agent/" + str(agentId) + "\t\t", end="")
@@ -81,7 +81,7 @@ def testGetAgent(t, agentId, agentStatus, statuscode):
 test cases for agent sign in
 @param t - test case number
 @param agentId - agent id
-@param statuscode - http status code
+@param statuscode - expected http status code
 '''
 def testAgentSignIn(t, agentId, statuscode):
     print(str(t) + ".\tdelivery request\t- post /agentSignIn\t\t", end="")
@@ -100,7 +100,7 @@ def testAgentSignIn(t, agentId, statuscode):
 test cases for agent sign out
 @param t - test case number
 @param agentId - agent id
-@param statuscode - http status code
+@param statuscode - expected http status code
 '''
 def testAgentSignOut(t, agentId, statuscode):
     print(str(t) + ".\tdelivery request\t- post /agentSignOut\t\t", end="")
@@ -121,7 +121,7 @@ test case for request order
 @param restId - restaurant id
 @param itemId - item id
 @param qty - quantity
-@param statuscode - http status code
+@param statuscode - expected http status code
 '''
 def testRequestOrder(t, custId, restId, itemId, qty, statuscode):
     print(str(t) + ".\tdelivery request\t- post /requestOrder\t\t", end="")
@@ -140,7 +140,7 @@ def testRequestOrder(t, custId, restId, itemId, qty, statuscode):
 test case for order delivered
 @param t - test case number
 @param orderId - order id
-@param statuscode - http status code
+@param statuscode - expected http status code
 '''
 def testOrderDelivered(t, orderId, statuscode):
     print(str(t) + ".\tdelivery request\t- post /orderDelivered\t\t", end="")
@@ -160,7 +160,7 @@ test case for get order details
 @param orderId - order id
 @param status - order status
 @param agentId - agent id
-@param statuscode - http status code
+@param statuscode - expected http status code
 '''
 def testGetOrder(t, orderId, status, agentId, statuscode):
     print(str(t) + ".\tdelivery request\t- get /order/" + str(orderId) + "\t\t", end="")

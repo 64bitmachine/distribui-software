@@ -1,14 +1,13 @@
 package com.rathod.restaurant.service;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.InputStreamReader;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import com.rathod.restaurant.CONSTANTS;
@@ -38,9 +37,8 @@ public class RecordInitializer {
 		restaurants.clear();
 
 		try {
-			Resource resource = new ClassPathResource(FILE_PATH);
-			BufferedReader bReader = new BufferedReader(
-				new InputStreamReader(resource.getInputStream()));
+			File file = new File(FILE_PATH);
+			BufferedReader bReader = new BufferedReader(new FileReader(file));
 
 			String line = null;
 			while((line = bReader.readLine())!=null) {

@@ -4,10 +4,11 @@ import com.rathod.delivery.CONSTANTS;
 import com.rathod.delivery.entity.DeliveryAgent;
 import com.rathod.delivery.entity.DeliveryAgentStatus;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.ArrayList;
 
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import lombok.AllArgsConstructor;
@@ -27,11 +28,11 @@ public class ReadDB {
         try {
             // read the text file
             String line;
-            // use resource class to read the file
-            Resource resource = new ClassPathResource(DB_FILE);
-            // read the file
-            java.io.BufferedReader br = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(resource.getInputStream()));
+            
+            // read the file from filesystem and store it in a string
+            File file = new File(DB_FILE);
+            BufferedReader br = new BufferedReader(new FileReader(file));
+
             int starCount = 0;
             while ((line = br.readLine()) != null) {
 

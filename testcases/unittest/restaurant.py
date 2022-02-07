@@ -42,7 +42,7 @@ test case for order
 @param t: test case number
 @param order: order data list
 @param type: "acceptOrder" or "refillItem"
-@param status: http code 201
+@param status: expected http code 201
 '''
 def testOrder(t, order, type, status):
     for i in range(len(order)):
