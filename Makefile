@@ -1,13 +1,13 @@
 jars:
-	cd wallet && ./mvnw package && \
-	cd ../delivery && ./mvnw package && \
-	cd ../restaurant && ./mvnw package && \
+	cd Wallet && ./mvnw package && \
+	cd ../Delivery && ./mvnw package && \
+	cd ../Restaurant && ./mvnw package && \
 	cd ..
 
 images:
-	docker build -t wallet-service ./wallet
-	docker build -t restaurant-service ./restaurant
-	docker build -t delivery-service ./delivery
+	docker build -t wallet-service ./Wallet
+	docker build -t restaurant-service ./Restaurant
+	docker build -t delivery-service ./Delivery
 	docker images
 
 containers:

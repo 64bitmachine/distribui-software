@@ -12,7 +12,7 @@
         make stop           - stop the containers
         make clean          - removes the docker images
 
-    for testcases, goto testcases folder, and run the following commands
+    for testcases, goto "Tests folder", and run the following commands
 
         ./runtest.sh
 
