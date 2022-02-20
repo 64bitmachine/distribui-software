@@ -1,6 +1,6 @@
 jars:
 	cd Wallet && ./mvnw package && \
-	cd ../Delivery && ./mvnw package && \
+	cd ../Delivery && ./mvnw -DskipTests package && \
 	cd ../Restaurant && ./mvnw package && \
 	cd ..
 
@@ -20,6 +20,7 @@ images:
 # 	docker run -d -p 8081:8080 --rm --name delivery --add-host=host.docker.internal:host-gateway -v ~/Downloads/initialData.txt:/initialData.txt delivery-service
 
 deployments:
+  docker run --name delivery-db --add-host=host.docker.internal:host-gateway -p 3306 -e MYSQL_ROOT_PASSWORD=root -d mysql:latest
 	minikube kubectl -- apply -f ./Kubernetes/delivery.yml
 	minikube kubectl -- apply -f ./Kubernetes/restaurant.yml
 	minikube kubectl -- apply -f ./Kubernetes/wallet.yml
@@ -46,4 +47,3 @@ clean:
 	cd ../Delivery && ./mvnw clean && \
 	cd ../Restaurant && ./mvnw clean && \
 	cd ..
-	
