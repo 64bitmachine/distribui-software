@@ -20,11 +20,11 @@ images:
 # 	docker run -d -p 8081:8080 --rm --name delivery --add-host=host.docker.internal:host-gateway -v ~/Downloads/initialData.txt:/initialData.txt delivery-service
 
 deployments:
-  docker run --name delivery-db --add-host=host.docker.internal:host-gateway -p 3306 -e MYSQL_ROOT_PASSWORD=root -d mysql:latest
+#   docker run --name delivery-db --add-host=host.docker.internal:host-gateway -p 3306 -e MYSQL_ROOT_PASSWORD=root -d mysql:latest
+	minikube kubectl -- apply -f ./Database/db.yml
 	minikube kubectl -- apply -f ./Kubernetes/delivery.yml
 	minikube kubectl -- apply -f ./Kubernetes/restaurant.yml
 	minikube kubectl -- apply -f ./Kubernetes/wallet.yml
-
 services:
 	minikube kubectl -- create service loadbalancer delivery-service --tcp=8080:8080
 	minikube kubectl -- create service loadbalancer wallet-service --tcp=8080:8080
@@ -40,6 +40,8 @@ clean:
 	minikube kubectl -- delete -n default service delivery-service
 	minikube kubectl -- delete -n default service wallet-service
 	minikube kubectl -- delete -n default service restaurant-service 
+	minikube kubectl -- delete -n default deployment mysql
+	minikube kubectl -- delete -n default service mysql 
 	docker rmi -f dist/wallet-service
 	docker rmi -f dist/restaurant-service
 	docker rmi -f dist/delivery-service
