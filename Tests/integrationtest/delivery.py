@@ -36,7 +36,6 @@ test cases for delivery service api
 import requests
 import sys
 
-from sqlalchemy import null
 sys.path.append('..')
 sys.path.append('../unittest')
 import wallet

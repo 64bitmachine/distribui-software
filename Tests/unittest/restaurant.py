@@ -52,6 +52,7 @@ def testOrder(t, order, type, status):
             if response.status_code == status:
                 test_pass()
             else:
+                print(order, type, response.status_code)
                 test_fail()
         except:
             test_fail()
