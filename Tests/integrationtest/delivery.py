@@ -200,7 +200,7 @@ if __name__ == "__main__":
     customers = [301, 302, 303]
     # **********************************************************
 
-    print_box("\033[93mDelivery Service API Test\033[1;32;40m")
+    print_box("\033[93mDelivery Service API Test (Project 1 Phase 1) \033[1;32;40m")
 
     # ---------------------  /reInitialize  --------------------
     testReinitialize(1)
@@ -351,3 +351,5 @@ if __name__ == "__main__":
     testRequestOrder(101, 301, 101, 2, 1, 201)
     testOrderDelivered(102, 1000, 201)
     testGetOrder(103, 1000, "unassigned", -1, 200)
+
+    print_box("\033[93mPublic Testcases (Project 1 Phase 1) \033[1;32;40m")

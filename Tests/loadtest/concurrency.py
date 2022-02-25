@@ -120,7 +120,7 @@ def deliverytest(custId, locks):
                 orderQueue.task_done()
 
 if __name__ == '__main__':
-    print_box("\033[93mLoad Testing\033[1;32;40m")
+    print_box("\033[93mLoad Testing (Project 1 Phase 2) \033[1;32;40m")
 
     wallet.testReinitialize(1)
     restaurant.testReinitialize(2)
@@ -159,3 +159,5 @@ if __name__ == '__main__':
             future.result()
 
         print("total orders placed: " + str(OrderIds))
+
+    print_box("\033[93mPublic Testcases (Project 1 Phase 2) \033[1;32;40m")

@@ -98,7 +98,7 @@ def testDeductBalance(t, custId, amount, statuscode):
 
 if __name__ == "__main__":
 
-    print_box("\033[93mWallet Service API Test\033[1;32;40m")
+    print_box("\033[93mWallet Service API Test (Project 1 Phase 1) \033[1;32;40m")
 
     # ---------------------  /reInitialize  ---------------------
     testReinitialize(1)
