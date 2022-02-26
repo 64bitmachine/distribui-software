@@ -3,6 +3,7 @@
 wallet_url     = "http://localhost:8082"
 delivery_url   = "http://localhost:8081"
 restaurant_url = "http://localhost:8080"
+
 class Restaurants:
     def __init__(self, id):
         self.id = id
