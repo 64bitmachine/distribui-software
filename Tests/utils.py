@@ -1,8 +1,8 @@
 #/usr/bin/env python3
 
-wallet_url      = "http://localhost:8082"
-restaurant_url  = "http://localhost:8080"
-delivery_url    = "http://localhost:8081"
+wallet_url     = "http://localhost:8082"
+delivery_url   = "http://localhost:8081"
+restaurant_url = "http://localhost:8080"
 
 class Restaurants:
     def __init__(self, id):

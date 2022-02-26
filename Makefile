@@ -29,7 +29,11 @@ services:
 	minikube kubectl -- create service loadbalancer delivery-service --tcp=8080:8080
 	minikube kubectl -- create service loadbalancer wallet-service --tcp=8080:8080
 	minikube kubectl -- create service loadbalancer restaurant-service --tcp=8080:8080
-	
+ 
+port-forwards:
+	minikube kubectl -- port-forward service/restaurant-service 8080:8080 &
+	minikube kubectl -- port-forward service/delivery-service 8081:8080 &
+	minikube kubectl -- port-forward service/wallet-service 8082:8080 &
 # stop:
 # 	docker stop wallet restaurant delivery
 
@@ -49,3 +53,4 @@ clean:
 	cd ../Delivery && ./mvnw clean && \
 	cd ../Restaurant && ./mvnw clean && \
 	cd ..
+#	ps aux|grep port-forward|awk '{print $2}'| xargs kill
