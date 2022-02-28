@@ -37,7 +37,7 @@ public class WalletService {
         for (int i = 0; i < customers.size(); i++) {
             if (customers.get(i).getCustId() == customer.getCustId()) {
                 customers.get(i).setAmount(customers.get(i).getAmount() + customer.getAmount());
-                System.out.println(customers.get(i).getAmount());
+                System.out.println(customers.get(i).getAmount() + " ----- " + customer.getAmount());
             }
         }
     }

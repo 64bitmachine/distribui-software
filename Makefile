@@ -14,6 +14,9 @@ images:
 	docker build -t dist/delivery-service ./Delivery ; \
 	docker images
 
+install_metrics_server:
+	minikube kubectl -- apply -f ./Kubernetes/metrics-server.yml
+
 # containers:
 # 	docker run -d -p 8082:8080 --rm --name wallet --add-host=host.docker.internal:host-gateway -v ~/Downloads/initialData.txt:/initialData.txt wallet-service
 # 	docker run -d -p 8080:8080 --rm --name restaurant --add-host=host.docker.internal:host-gateway -v ~/Downloads/initialData.txt:/initialData.txt restaurant-service
@@ -29,7 +32,10 @@ services:
 	minikube kubectl -- create service loadbalancer delivery-service --tcp=8080:8080
 	minikube kubectl -- create service loadbalancer wallet-service --tcp=8080:8080
 	minikube kubectl -- create service loadbalancer restaurant-service --tcp=8080:8080
- 
+
+autoscale:
+	minikube kubectl -- autoscale deployment delivery-service --cpu-percent=50 --min=1 --max=3
+
 port-forwards:
 	minikube kubectl -- port-forward service/restaurant-service 8080:8080 &
 	minikube kubectl -- port-forward service/delivery-service 8081:8080 &
@@ -38,6 +44,7 @@ port-forwards:
 # 	docker stop wallet restaurant delivery
 
 clean:
+	minikube kubectl -- delete -n default hpa delivery-hpa
 	minikube kubectl -- delete -n default deployment delivery-service
 	minikube kubectl -- delete -n default deployment wallet-service
 	minikube kubectl -- delete -n default deployment restaurant-service
@@ -46,11 +53,11 @@ clean:
 	minikube kubectl -- delete -n default service restaurant-service 
 	minikube kubectl -- delete -n default deployment mysql
 	minikube kubectl -- delete -n default service mysql 
-	docker rmi -f dist/wallet-service
-	docker rmi -f dist/restaurant-service
-	docker rmi -f dist/delivery-service
-	cd Wallet && ./mvnw clean && \
-	cd ../Delivery && ./mvnw clean && \
-	cd ../Restaurant && ./mvnw clean && \
-	cd ..
-#	ps aux|grep port-forward|awk '{print $2}'| xargs kill
+	# docker rmi -f dist/wallet-service
+	# docker rmi -f dist/restaurant-service
+	# docker rmi -f dist/delivery-service
+	# cd Wallet && ./mvnw clean && \
+	# cd ../Delivery && ./mvnw clean && \
+	# cd ../Restaurant && ./mvnw clean && \
+	# cd ..
+	ps aux|grep port-forward|awk '{print $2}'| xargs kill

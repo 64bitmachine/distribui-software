@@ -81,7 +81,7 @@ this function is used to test the concurrency of the delivery service
 def deliverytest(custId, locks):
     global OrderIds, MenuOrder
     money = 2000
-    for i in range(100):
+    for i in range(1000):
         amount = random.randint(0, 100)
         orderQty = random.randint(0, 10)
         orderItem = random.randint(0, len(MenuOrder) - 1)
@@ -119,22 +119,51 @@ def deliverytest(custId, locks):
                 delivery.testOrderDelivered(81, orderQueue.get(), 201)
                 orderQueue.task_done()
 
+
+def deliveryAgentTest(agentId):
+    for i in range(500):
+        delivery.testAgentSignIn(i, agentId, 201)
+
 if __name__ == '__main__':
     print_box("\033[93mLoad Testing (Project 1 Phase 2) \033[1;32;40m")
 
-    wallet.testReinitialize(1)
-    restaurant.testReinitialize(2)
-    # create a thread pool
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = []
-        for cid in [301, 302, 303]:
-            futures.append(executor.submit(wallettest, custId=cid))
+    # wallet.testReinitialize(1)
+    # restaurant.testReinitialize(2)
+    # # create a thread pool
+    # with concurrent.futures.ThreadPoolExecutor() as executor:
+    #     futures = []
+    #     for cid in [301, 302, 303]:
+    #         futures.append(executor.submit(wallettest, custId=cid))
 
-        for rid in [101, 102]:
-            futures.append(executor.submit(restauranttest, restId=rid))
+    #     for rid in [101, 102]:
+    #         futures.append(executor.submit(restauranttest, restId=rid))
 
-        for future in concurrent.futures.as_completed(futures):
-            future.result()
+    #     for future in concurrent.futures.as_completed(futures):
+    #         future.result()
+
+    # with concurrent.futures.ThreadPoolExecutor() as executor:
+    #     wallet.testReinitialize(1)
+    #     restaurant.testReinitialize(2)
+    #     delivery.testReinitialize(3)
+    #     futures = []
+
+    #     for delAgent in [201, 202, 203]:
+    #         delivery.testAgentSignIn(4, delAgent, 201)
+
+    #     locks = []
+    #     for i in range(len(MenuOrder)):
+    #         locks.append(threading.Lock())
+
+    #     q = queue.Queue()
+
+    #     for cid in [301, 302, 303]:
+    #         futures.append(executor.submit(
+    #             deliverytest, custId=cid, locks=locks))
+
+    #     for future in concurrent.futures.as_completed(futures):
+    #         future.result()
+
+    #     print("total orders placed: " + str(OrderIds))
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         wallet.testReinitialize(1)
@@ -142,22 +171,12 @@ if __name__ == '__main__':
         delivery.testReinitialize(3)
         futures = []
 
-        for delAgent in [201, 202, 203]:
-            delivery.testAgentSignIn(4, delAgent, 201)
-
-        locks = []
-        for i in range(len(MenuOrder)):
-            locks.append(threading.Lock())
-
-        q = queue.Queue()
-
-        for cid in [301, 302, 303]:
+        for aid in [201, 202, 203]:
             futures.append(executor.submit(
-                deliverytest, custId=cid, locks=locks))
+                deliveryAgentTest, agentId=aid))
 
         for future in concurrent.futures.as_completed(futures):
             future.result()
 
-        print("total orders placed: " + str(OrderIds))
 
     print_box("\033[93mPublic Testcases (Project 1 Phase 2) \033[1;32;40m")
