@@ -26,9 +26,10 @@
 
 ### Troubleshooting
 
-    If issue with port allocation/deallocation, run the following command for few times
+    If you are facing issue with port allocation/deallocation, run the following commands for few times
 
         ps aux | grep port-forward | awk '{print $2}' | xargs kill
+        make port-forwards
 
     Make sure that metric-server is running.
 

@@ -15,6 +15,7 @@ import restaurant
 import wallet
 import queue
 
+# Global variable containing the restaurant and food item metadata
 MenuOrder = [{"restId": 101, "itemId": 1, "qty": 10, "price": 180},
              {"restId": 101, "itemId": 2, "qty": 20, "price": 230},
              {"restId": 102, "itemId": 1, "qty": 10, "price": 50},
@@ -24,10 +25,14 @@ MenuOrder = [{"restId": 101, "itemId": 1, "qty": 10, "price": 180},
 
 counterLock = threading.Lock()
 OrderIds  = 1000
+
+# this global variable is used to keep track of the order queue
+# contains the order ids like 1000, 1001, 1002, etc
 orderQueue = queue.Queue()
 
 '''
 this function is used to test the concurrency of the wallet service
+by adding and withdrawing money from the wallet
 '''
 def wallettest(custId):
     balance = 2000
@@ -35,15 +40,22 @@ def wallettest(custId):
         # 50% chance of adding money
         amount = random.randint(0, 100)
         if random.randint(0, 1) == 0:
+
+            # adds money to wallet
+
             balance += amount
             wallet.testAddBalance(i, custId, amount, 201)
         else:
+
+            # withdraws money from wallet
+
             balance -= amount
             wallet.testDeductBalance(i, custId, amount, 201)
         wallet.testGetBalance(i, custId, balance, 200)
 
 '''
 this function is used to test the concurrency of the restaurant service
+by requesting/accepting and refilling food items
 '''
 def restauranttest(restId):
     global MenuOrder
@@ -55,6 +67,7 @@ def restauranttest(restId):
                             "itemId": MenuOrder[i]["itemId"], "qty": MenuOrder[i]["qty"]})
 
     itemCount = []
+    # initializing the item count
     if restId == 101:
         itemCount = [10, 20]
     else:
@@ -64,6 +77,9 @@ def restauranttest(restId):
         for i in range(len(myOrder)):
             orderItem = random.randint(0, 10)
             if random.randint(0, 1) == 0:
+
+                # order food
+
                 myOrder[i]["qty"] = orderItem
                 if orderItem > itemCount[i] or orderItem == 0:
                     restaurant.testOrder(j, [myOrder[i]], "acceptOrder", 410)
@@ -71,20 +87,29 @@ def restauranttest(restId):
                     restaurant.testOrder(j, [myOrder[i]], "acceptOrder", 201)
                     itemCount[i] -= orderItem
             else:
+
+                # refill item
+
                 myOrder[i]["qty"] = orderItem
                 itemCount[i] += orderItem
                 restaurant.testOrder(j, [myOrder[i]], "refillItem", 201)
 
 '''
-this function is used to test the concurrency of the delivery service
+This function is used to test the concurrency of the delivery service.
+By requesting/accepting and delivering food items along with updating the wallet balance
+Locks are used to ensure that same item cannot be ordered at the same time but different
+orders corresponding to different items can be placed at the same time
 '''
 def deliverytest(custId, locks):
     global OrderIds, MenuOrder
     money = 2000
+
     for i in range(100):
+
         amount = random.randint(0, 100)
         orderQty = random.randint(0, 10)
         orderItem = random.randint(0, len(MenuOrder) - 1)
+
         if random.randint(0, 1) == 0:
             if orderQty > 0:
                 locks[orderItem].acquire()
