@@ -119,13 +119,22 @@ def deliverytest(custId, locks):
                 delivery.testOrderDelivered(81, orderQueue.get(), 201)
                 orderQueue.task_done()
 
+'''
+this function is used to test the concurrency of the delivery service
+by agents signing in
+'''
+def deliveryAgentTest(agentId):
+    for i in range(100):
+        delivery.testAgentSignIn(i, agentId, 201)
+
 if __name__ == '__main__':
+
     print_box("\033[93mLoad Testing (Project 1 Phase 2) \033[1;32;40m")
 
-    wallet.testReinitialize(1)
-    restaurant.testReinitialize(2)
-    # create a thread pool
+    # create a thread pool for testing concurrency of wallet and restaurant services
     with concurrent.futures.ThreadPoolExecutor() as executor:
+        wallet.testReinitialize(1)
+        restaurant.testReinitialize(2)
         futures = []
         for cid in [301, 302, 303]:
             futures.append(executor.submit(wallettest, custId=cid))
@@ -136,6 +145,8 @@ if __name__ == '__main__':
         for future in concurrent.futures.as_completed(futures):
             future.result()
 
+    # create a thread pool for testing concurrency of delivery service
+    # requests new order and also marks the order as delivered by the agent
     with concurrent.futures.ThreadPoolExecutor() as executor:
         wallet.testReinitialize(1)
         restaurant.testReinitialize(2)
@@ -159,5 +170,76 @@ if __name__ == '__main__':
             future.result()
 
         print("total orders placed: " + str(OrderIds))
+
+    # loading testing delivery service with the help of agents signin
+    for i in range(10):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            wallet.testReinitialize(1)
+            restaurant.testReinitialize(2)
+            delivery.testReinitialize(3)
+            futures = []
+
+            # random number of threads 1 - 50
+            numThreads = random.randint(1, 50)
+            print("number of threads: " + str(numThreads))
+            while numThreads > 0:
+                for aid in [201, 202, 203]:
+                    futures.append(executor.submit(
+                        deliveryAgentTest, agentId=aid))
+                    numThreads -= 1
+
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+    
+    # --------- test case 1 ------------
+    # --------- three agents sign in and 3 orders are placed ------------------------------
+    # --------- and checking that order id and agent mapping is correct ----------------------
+    wallet.testReinitialize(1)
+    restaurant.testReinitialize(2)
+    delivery.testReinitialize(3)
+
+    delivery.testAgentSignIn(4, 201, 201)
+    delivery.testAgentSignIn(5, 202, 201)
+    delivery.testAgentSignIn(6, 203, 201)
+
+    thread1 = threading.Thread(target=delivery.testRequestOrder, args=(4, 301, 101, 2, 1, 201,))
+    thread2 = threading.Thread(target=delivery.testRequestOrder, args=(5, 302, 101, 2, 1, 201,))
+    thread3 = threading.Thread(target=delivery.testRequestOrder, args=(6, 303, 101, 2, 1, 201,))
+
+    thread1.start()
+    thread2.start()
+    thread3.start()
+
+    thread1.join()
+    thread2.join()
+    thread3.join()
+
+    delivery.testGetOrder(51, 1000, "assigned", 201, 200)
+    delivery.testGetOrder(56, 1001, "assigned", 202, 200)
+    delivery.testGetOrder(57, 1002, "assigned", 203, 200)
+
+    thread4  = threading.Thread(target=delivery.testOrderDelivered, args=(81, 1000, 201,))
+    thread5  = threading.Thread(target=delivery.testOrderDelivered, args=(82, 1001, 201,))
+    thread6  = threading.Thread(target=delivery.testRequestOrder, args=(7, 301, 101, 2, 1, 201,))
+    thread7  = threading.Thread(target=delivery.testRequestOrder, args=(8, 302, 101, 2, 1, 201,))
+
+    thread4.start()
+    thread5.start()
+    thread6.start()
+    thread7.start()
+
+    thread4.join()
+    thread5.join()
+    thread6.join()
+    thread7.join()
+
+    delivery.testGetOrder(81, 1000, "delivered", 201, 200)
+    delivery.testGetOrder(82, 1001, "delivered", 202, 200)
+    delivery.testGetOrder(57, 1002, "assigned", 203, 200)
+    res1 = delivery.testGetOrder(57, 1003, "return", 201, 200)
+    res2 = delivery.testGetOrder(57, 1004, "return", 202, 200)
+
+    if res1.json()["agentId"] != res2.json()["agentId"]:
+        test_pass()
 
     print_box("\033[93mPublic Testcases (Project 1 Phase 2) \033[1;32;40m")

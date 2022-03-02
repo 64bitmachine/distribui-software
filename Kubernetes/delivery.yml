@@ -1,14 +1,14 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: delivery-service
+  name: arman-delivery-service
   namespace: default
   uid: 5366f4fc-4887-4659-8202-d04025a8c481
   resourceVersion: '2125'
   generation: 2
   creationTimestamp: '2022-02-17T20:01:53Z'
   labels:
-    app: delivery-service
+    app: arman-delivery-service
   annotations:
     deployment.kubernetes.io/revision: '2'
   managedFields:
@@ -40,7 +40,7 @@ metadata:
                 f:app: {}
             f:spec:
               f:containers:
-                k:{"name":"delivery-service"}:
+                k:{"name":"arman-delivery-service"}:
                   .: {}
                   f:image: {}
                   f:name: {}
@@ -62,7 +62,7 @@ metadata:
           f:template:
             f:spec:
               f:containers:
-                k:{"name":"delivery-service"}:
+                k:{"name":"arman-delivery-service"}:
                   f:imagePullPolicy: {}
     - manager: kube-controller-manager
       operation: Update
@@ -103,16 +103,22 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: delivery-service
+      app: arman-delivery-service
   template:
     metadata:
       labels:
-        app: delivery-service
+        app: arman-delivery-service
     spec:
       containers:
-        - name: delivery-service
-          image: dist/delivery-service
-          resources: {}
+        - name: arman-delivery-service
+          image: arman/delivery-service
+          resources:
+            limits:
+              cpu: "200m"
+              memory: "1024Mi"
+            requests:
+              cpu: "200m"
+              memory: "1024Mi"
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           imagePullPolicy: Never
@@ -146,4 +152,29 @@ status:
       lastUpdateTime: '2022-02-17T20:02:18Z'
       lastTransitionTime: '2022-02-17T20:01:53Z'
       reason: NewReplicaSetAvailable
-      message: ReplicaSet "delivery-service-b4ddc6c5b" has successfully progressed.
+      message: ReplicaSet "arman-delivery-service-b4ddc6c5b" has successfully progressed.
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: arman-delivery-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: arman-delivery-service
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 40
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

@@ -165,6 +165,8 @@ def testGetOrder(t, orderId, status, agentId, statuscode):
     print(str(t) + ".\tdelivery request\t- get /order/" + str(orderId) + "\t\t", end="")
     try:
         response = requests.get(delivery_url + "/order/" + str(orderId))
+        if status == "return":
+            return response
         if response.status_code == statuscode:
             if (status is not None):
                 if (response.json()["status"] == status and response.json()["agentId"] == agentId and response.json()["orderId"] == orderId):
@@ -173,7 +175,7 @@ def testGetOrder(t, orderId, status, agentId, statuscode):
                     test_fail()
                     print(response.json())
             else:
-                test_pass()
+                test_fail()
         else:
             test_fail()
     except:

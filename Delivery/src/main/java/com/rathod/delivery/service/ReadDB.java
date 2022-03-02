@@ -45,7 +45,9 @@ public class ReadDB {
                 }
 
                 if (starCount == 1) {
-                    DeliveryAgent agent = new DeliveryAgent(Integer.parseInt(line), DeliveryAgentStatus.signed_out);
+                    DeliveryAgent agent = new DeliveryAgent();
+                    agent.setAgentId(Integer.parseInt(line));
+                    agent.setStatus(DeliveryAgentStatus.signed_out);
                     deliveryAgents.add(agent);
                 }
             }
