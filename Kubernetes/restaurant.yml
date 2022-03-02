@@ -1,14 +1,14 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: restaurant-service
+  name: arman-restaurant-service
   namespace: default
   uid: 2ef7adc9-7155-474a-a7cc-bb1fc872d8f3
   resourceVersion: '777'
   generation: 2
   creationTimestamp: '2022-02-17T19:32:58Z'
   labels:
-    app: restaurant-service
+    app: arman-restaurant-service
   annotations:
     deployment.kubernetes.io/revision: '2'
   managedFields:
@@ -40,7 +40,7 @@ metadata:
                 f:app: {}
             f:spec:
               f:containers:
-                k:{"name":"restaurant-service"}:
+                k:{"name":"arman-restaurant-service"}:
                   .: {}
                   f:image: {}
                   f:name: {}
@@ -62,7 +62,7 @@ metadata:
           f:template:
             f:spec:
               f:containers:
-                k:{"name":"restaurant-service"}:
+                k:{"name":"arman-restaurant-service"}:
                   f:imagePullPolicy: {}
     - manager: kube-controller-manager
       operation: Update
@@ -103,15 +103,15 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: restaurant-service
+      app: arman-restaurant-service
   template:
     metadata:
       labels:
-        app: restaurant-service
+        app: arman-restaurant-service
     spec:
       containers:
-        - name: restaurant-service
-          image: dist/restaurant-service
+        - name: arman-restaurant-service
+          image: arman/restaurant-service
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -146,4 +146,4 @@ status:
       lastUpdateTime: '2022-02-17T19:33:44Z'
       lastTransitionTime: '2022-02-17T19:32:58Z'
       reason: NewReplicaSetAvailable
-      message: ReplicaSet "restaurant-service-7767768b69" has successfully progressed.
+      message: ReplicaSet "arman-restaurant-service-7767768b69" has successfully progressed.

@@ -56,19 +56,15 @@ public class DeliveryService {
     private static int orderId;
     
     @Autowired
-    public DeliveryService(ReadDB readDB, WebClient.Builder webClientBuilder)
-    {
+    public DeliveryService(ReadDB readDB, WebClient.Builder webClientBuilder) {
     	this.readDB = readDB;
     	this.webClientBuilder = webClientBuilder;
     }
     
-    public DeliveryService()
-    {
-    	
-    }
+    public DeliveryService() {}
+
     @PostConstruct
-    public void init()
-    {
+    public void init() {
     	restaurantWebClient = webClientBuilder.baseUrl(restaurant_url).
     			defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).build();
     	walletWebClient = webClientBuilder.baseUrl(wallet_url)
@@ -191,14 +187,17 @@ public class DeliveryService {
     	deliveryAgent.setStatus(DeliveryAgentStatus.available);
 		deliveryAgentRepository.save(deliveryAgent);
     	
-    	Order order2 = findLowestOrderIdThatIsUnassigned();
-    	if(order2 != null)
-    	{
-    		deliveryAgent.setStatus(DeliveryAgentStatus.unavailable);
-    		order2.setAgentId(deliveryAgentId);
-			order2.setStatus(OrderStatus.assigned);
-			orderRepository.save(order2);
-    	}
+		// this part is critical section so, it is synchronized
+		synchronized (this) {
+			Order order2 = findLowestOrderIdThatIsUnassigned();
+			if(order2 != null)
+			{
+				deliveryAgent.setStatus(DeliveryAgentStatus.unavailable);
+				order2.setAgentId(deliveryAgentId);
+				order2.setStatus(OrderStatus.assigned);
+				orderRepository.save(order2);
+			}
+		}
     }
 
     private DeliveryAgent findDeliveryAgentById(int deliveryAgentId) {
@@ -280,18 +279,23 @@ public class DeliveryService {
 			}
     		return null;
     	}
-  
-    	Order order = getOrderObject(placeOrder,orderId);
-    	orderId += 1;
     	
-    	DeliveryAgent agent = findLowestAvailableAgentId();
-    	if(agent != null)
-    	{
-    		order.setAgentId(agent.getAgentId());
-    		order.setStatus(OrderStatus.assigned);
-			agent.setStatus(DeliveryAgentStatus.unavailable);
-			deliveryAgentRepository.save(agent);
+		Order order = null;
+
+		// this part is critical section so, it is synchronized
+		synchronized (this) {
+			order = getOrderObject(placeOrder,orderId);
+    		orderId += 1;
+			DeliveryAgent agent = findLowestAvailableAgentId();
+			if(agent != null)
+			{
+				order.setAgentId(agent.getAgentId());
+				order.setStatus(OrderStatus.assigned);
+				agent.setStatus(DeliveryAgentStatus.unavailable);
+				deliveryAgentRepository.save(agent);
+			}
 		}
+
 		orderRepository.save(order);
     	return new OrderInvoice(order.getOrderId());
     }
@@ -307,8 +311,7 @@ public class DeliveryService {
 		return order;
 	}
 
-	public DeliveryAgent findLowestAvailableAgentId()
-    {
+	public DeliveryAgent findLowestAvailableAgentId() {
 		List<DeliveryAgent> agents = deliveryAgentRepository.findAll();
     	Collections.sort(agents, Comparator.comparing(DeliveryAgent::getAgentId));
     	for(DeliveryAgent agent : agents) {

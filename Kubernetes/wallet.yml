@@ -1,14 +1,14 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: wallet-service
+  name: arman-wallet-service
   namespace: default
   uid: b0b1eebd-6c46-456e-899d-b676670c9871
   resourceVersion: '1612'
   generation: 2
   creationTimestamp: '2022-02-17T19:49:28Z'
   labels:
-    app: wallet-service
+    app: arman-wallet-service
   annotations:
     deployment.kubernetes.io/revision: '2'
   managedFields:
@@ -40,7 +40,7 @@ metadata:
                 f:app: {}
             f:spec:
               f:containers:
-                k:{"name":"wallet-service"}:
+                k:{"name":"arman-wallet-service"}:
                   .: {}
                   f:image: {}
                   f:name: {}
@@ -62,7 +62,7 @@ metadata:
           f:template:
             f:spec:
               f:containers:
-                k:{"name":"wallet-service"}:
+                k:{"name":"arman-wallet-service"}:
                   f:imagePullPolicy: {}
     - manager: kube-controller-manager
       operation: Update
@@ -103,15 +103,15 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: wallet-service
+      app: arman-wallet-service
   template:
     metadata:
       labels:
-        app: wallet-service
+        app: arman-wallet-service
     spec:
       containers:
-        - name: wallet-service
-          image: dist/wallet-service
+        - name: arman-wallet-service
+          image: arman/wallet-service
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -146,4 +146,4 @@ status:
       lastUpdateTime: '2022-02-17T19:51:24Z'
       lastTransitionTime: '2022-02-17T19:49:28Z'
       reason: NewReplicaSetAvailable
-      message: ReplicaSet "wallet-service-6696f78695" has successfully progressed.
+      message: ReplicaSet "arman-wallet-service-6696f78695" has successfully progressed.
