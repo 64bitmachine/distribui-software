@@ -14,6 +14,7 @@ clear
 # cd ..
 
 # -------------- phase 2 testcases --------------
+
 cd loadtest
 python3 concurrency.py
 cd ..
