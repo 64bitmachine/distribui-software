@@ -267,4 +267,29 @@ if __name__ == '__main__':
     if res1.json()["agentId"] != res2.json()["agentId"]:
         test_pass()
 
+    # --------- test case 2 ------------
+    # --------- 50 threads deducing 40 rupees resulting in 0(40*50) amount ------------------------------
+    wallet.testReinitialize(1)
+    restaurant.testReinitialize(2)
+    delivery.testReinitialize(3)
+
+
+    threads = []
+
+    for i in range(50):
+
+        threads.append(threading.Thread(target=wallet.testDeductBalance, args=(11, 301, 40, 201,)))
+
+    for i in range(50):
+        threads[i].start()
+
+    for i in range(50):
+        threads[i].join()
+
+    res1 = wallet.testGetBalance(7, 301, 101, 144)
+    # print(res1.json()["amount"])
+
+    if res1.json()["amount"] == 0:
+        test_pass()
+
     print_box("\033[93mPublic Testcases (Project 1 Phase 2) \033[1;32;40m")

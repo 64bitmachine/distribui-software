@@ -19,8 +19,14 @@ make services
 echo "Waiting for the service to be ready "
 for i in {1..10}; do
     echo .
-    sleep 1
+    sleep 1.5
 done
 
 # port
 make port-forwards
+
+echo "Waiting for the port to be ready "
+for i in {1..10}; do
+    echo .
+    sleep 1
+done

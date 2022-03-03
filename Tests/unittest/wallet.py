@@ -37,6 +37,8 @@ def testGetBalance(t, custId, balance, statuscode):
     print(str(t) +".\twallet request\t\t- get /balance/" + str(custId) + "\t\t", end="")
     try:
         response = requests.get(wallet_url + "/balance/" + str(custId))
+        if statuscode == 144:
+            return response
         if response.status_code == statuscode and response.json()["custId"] == custId and response.json()["amount"] == balance:
             test_pass()
         else:
