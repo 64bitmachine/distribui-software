@@ -4,9 +4,12 @@
 
 ### commands
 
-    for setup and start the application
+    for setup and start the application 
+    (Note: initialData.txt is required to be present in the Downloads directory):
 
         ./launch.sh
+
+        Note: make sure 'minikube tunnel' is running (do it manually)
 
     for stop the application and clean the application
 
@@ -33,7 +36,8 @@
 
     Make sure that metric-server is running.
 
-    Note: To view the autoscaling feature, we need to wait for considerable amount of time(maybe 10 to 15 mins) in addition to generating huge amount of concurrent requests.
+    Note: To view the autoscaling feature, we need to wait for considerable amount of time(maybe 10 to 15 mins)
+     in addition to generating huge amount of concurrent requests.
 
 ### Screenshots
 
