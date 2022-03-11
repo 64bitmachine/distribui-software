@@ -1,0 +1,6 @@
+{
+    "yaml.schemas": {
+        "Kubernetes": "*.yaml",
+        "kubernetes://schema/apps/v1%40deployment": "file:///home/rathod/Git%20repos/distribui-software/Kubernetes/delivery.yml"
+    }
+}
