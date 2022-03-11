@@ -36,7 +36,6 @@ test cases for delivery service api
 import requests
 import sys
 
-from sqlalchemy import null
 sys.path.append('..')
 sys.path.append('../unittest')
 import wallet
@@ -166,6 +165,8 @@ def testGetOrder(t, orderId, status, agentId, statuscode):
     print(str(t) + ".\tdelivery request\t- get /order/" + str(orderId) + "\t\t", end="")
     try:
         response = requests.get(delivery_url + "/order/" + str(orderId))
+        if status == "return":
+            return response
         if response.status_code == statuscode:
             if (status is not None):
                 if (response.json()["status"] == status and response.json()["agentId"] == agentId and response.json()["orderId"] == orderId):
@@ -174,7 +175,7 @@ def testGetOrder(t, orderId, status, agentId, statuscode):
                     test_fail()
                     print(response.json())
             else:
-                test_pass()
+                test_fail()
         else:
             test_fail()
     except:
@@ -201,7 +202,7 @@ if __name__ == "__main__":
     customers = [301, 302, 303]
     # **********************************************************
 
-    print_box("\033[93mDelivery Service API Test\033[1;32;40m")
+    print_box("\033[93mDelivery Service API Test (Project 1 Phase 1) \033[1;32;40m")
 
     # ---------------------  /reInitialize  --------------------
     testReinitialize(1)
@@ -352,3 +353,5 @@ if __name__ == "__main__":
     testRequestOrder(101, 301, 101, 2, 1, 201)
     testOrderDelivered(102, 1000, 201)
     testGetOrder(103, 1000, "unassigned", -1, 200)
+
+    print_box("\033[93mPublic Testcases (Project 1 Phase 1) \033[1;32;40m")

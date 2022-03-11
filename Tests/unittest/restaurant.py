@@ -52,6 +52,7 @@ def testOrder(t, order, type, status):
             if response.status_code == status:
                 test_pass()
             else:
+                print(order, type, response.status_code)
                 test_fail()
         except:
             test_fail()
@@ -70,7 +71,7 @@ if __name__ == "__main__":
     restaurants[1].addItem(3, 60, 20)
     restaurants[1].addItem(4, 45, 15)
 
-    print_box("\033[93mRestaurant Service API Test\033[1;32;40m")
+    print_box("\033[93mRestaurant Service API Test (Project 1 Phase 1) \033[1;32;40m")
 
     # ---------------------  /reInitialize  ---------------------
     testReinitialize(1)

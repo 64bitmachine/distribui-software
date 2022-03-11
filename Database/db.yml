@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: arman-mysql
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: arman-mysql
+  clusterIP: None
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: arman-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arman-mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: arman-mysql
+    spec:
+      containers:
+        - image: mysql:5.6
+          name: arman-mysql
+          env:
+            # Use secret in prod use cases
+            - name: MYSQL_ROOT_PASSWORD
+              value: root
+          ports:
+            - containerPort: 3306
+              name: mysql

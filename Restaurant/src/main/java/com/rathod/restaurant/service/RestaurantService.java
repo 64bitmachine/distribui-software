@@ -57,6 +57,7 @@ public class RestaurantService {
 				{
 					if(item.getItemId().equals(accept.getItemId()) && item.getQuantity() >= accept.getQty())
 					{
+						log.info("restaurant id :" + restaurant.getRestaurantId());
 						log.info("Item before accept :" + item.getItemId()+" ||  "+item.getQuantity());
 						item.setQuantity(item.getQuantity() - accept.getQty());
 						acceptedItem = new Item(item.getItemId(), item.getPrice(), accept.getQty());

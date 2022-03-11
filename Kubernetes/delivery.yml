@@ -1,0 +1,180 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: arman-delivery-service
+  namespace: default
+  uid: 5366f4fc-4887-4659-8202-d04025a8c481
+  resourceVersion: '2125'
+  generation: 2
+  creationTimestamp: '2022-02-17T20:01:53Z'
+  labels:
+    app: arman-delivery-service
+  annotations:
+    deployment.kubernetes.io/revision: '2'
+  managedFields:
+    - manager: kubectl-create
+      operation: Update
+      apiVersion: apps/v1
+      time: '2022-02-17T20:01:53Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:labels:
+            .: {}
+            f:app: {}
+        f:spec:
+          f:progressDeadlineSeconds: {}
+          f:replicas: {}
+          f:revisionHistoryLimit: {}
+          f:selector: {}
+          f:strategy:
+            f:rollingUpdate:
+              .: {}
+              f:maxSurge: {}
+              f:maxUnavailable: {}
+            f:type: {}
+          f:template:
+            f:metadata:
+              f:labels:
+                .: {}
+                f:app: {}
+            f:spec:
+              f:containers:
+                k:{"name":"arman-delivery-service"}:
+                  .: {}
+                  f:image: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+              f:dnsPolicy: {}
+              f:restartPolicy: {}
+              f:schedulerName: {}
+              f:securityContext: {}
+              f:terminationGracePeriodSeconds: {}
+    - manager: dashboard
+      operation: Update
+      apiVersion: apps/v1
+      time: '2022-02-17T20:02:16Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:spec:
+          f:template:
+            f:spec:
+              f:containers:
+                k:{"name":"arman-delivery-service"}:
+                  f:imagePullPolicy: {}
+    - manager: kube-controller-manager
+      operation: Update
+      apiVersion: apps/v1
+      time: '2022-02-17T20:02:18Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:deployment.kubernetes.io/revision: {}
+        f:status:
+          f:availableReplicas: {}
+          f:conditions:
+            .: {}
+            k:{"type":"Available"}:
+              .: {}
+              f:lastTransitionTime: {}
+              f:lastUpdateTime: {}
+              f:message: {}
+              f:reason: {}
+              f:status: {}
+              f:type: {}
+            k:{"type":"Progressing"}:
+              .: {}
+              f:lastTransitionTime: {}
+              f:lastUpdateTime: {}
+              f:message: {}
+              f:reason: {}
+              f:status: {}
+              f:type: {}
+          f:observedGeneration: {}
+          f:readyReplicas: {}
+          f:replicas: {}
+          f:updatedReplicas: {}
+      subresource: status
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arman-delivery-service
+  template:
+    metadata:
+      labels:
+        app: arman-delivery-service
+    spec:
+      containers:
+        - name: arman-delivery-service
+          image: arman/delivery-service
+          resources:
+            limits:
+              cpu: "200m"
+              memory: "1024Mi"
+            requests:
+              cpu: "200m"
+              memory: "1024Mi"
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Never
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+status:
+  observedGeneration: 2
+  replicas: 1
+  updatedReplicas: 1
+  readyReplicas: 1
+  availableReplicas: 1
+  conditions:
+    - type: Available
+      status: 'True'
+      lastUpdateTime: '2022-02-17T20:02:18Z'
+      lastTransitionTime: '2022-02-17T20:02:18Z'
+      reason: MinimumReplicasAvailable
+      message: Deployment has minimum availability.
+    - type: Progressing
+      status: 'True'
+      lastUpdateTime: '2022-02-17T20:02:18Z'
+      lastTransitionTime: '2022-02-17T20:01:53Z'
+      reason: NewReplicaSetAvailable
+      message: ReplicaSet "arman-delivery-service-b4ddc6c5b" has successfully progressed.
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: arman-delivery-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: arman-delivery-service
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 40
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

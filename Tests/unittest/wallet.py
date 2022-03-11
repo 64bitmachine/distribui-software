@@ -37,6 +37,8 @@ def testGetBalance(t, custId, balance, statuscode):
     print(str(t) +".\twallet request\t\t- get /balance/" + str(custId) + "\t\t", end="")
     try:
         response = requests.get(wallet_url + "/balance/" + str(custId))
+        if statuscode == 144:
+            return response
         if response.status_code == statuscode and response.json()["custId"] == custId and response.json()["amount"] == balance:
             test_pass()
         else:
@@ -98,7 +100,7 @@ def testDeductBalance(t, custId, amount, statuscode):
 
 if __name__ == "__main__":
 
-    print_box("\033[93mWallet Service API Test\033[1;32;40m")
+    print_box("\033[93mWallet Service API Test (Project 1 Phase 1) \033[1;32;40m")
 
     # ---------------------  /reInitialize  ---------------------
     testReinitialize(1)
