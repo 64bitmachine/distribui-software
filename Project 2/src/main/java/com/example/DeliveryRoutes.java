@@ -75,10 +75,10 @@ public class DeliveryRoutes {
 		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.ReInitializeResponse> requestOrder(PlaceOrder placeOrder) {
+	private CompletionStage<Delivery.RequestOrderResponse> requestOrder(PlaceOrder placeOrder) {
 		log.info("serving requestOrder request");
 		log.info("placeOrder: " + placeOrder);
-		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
+		return AskPattern.ask(deliveryActor, ref -> new Delivery.RequestOrder(ref,placeOrder), askTimeout, scheduler);
 	}
 
 	private CompletionStage<Delivery.ReInitializeResponse> agentSignOut(AgentSignInOut agentSignInOut) {
