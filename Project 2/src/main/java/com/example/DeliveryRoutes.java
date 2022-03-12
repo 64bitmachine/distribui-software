@@ -5,6 +5,10 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import com.example.UserRegistry.User;
+import com.example.dto.AgentSignInOut;
+import com.example.dto.OrderDelivered;
+import com.example.dto.PlaceOrder;
+
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Scheduler;
@@ -65,23 +69,27 @@ public class DeliveryRoutes {
 		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.ReInitializeResponse> agentSignIn() {
+	private CompletionStage<Delivery.ReInitializeResponse> agentSignIn(AgentSignInOut agentSignInOut) {
 		log.info("serving agentSignIn request");
+		log.info("agentSignInOut: " + agentSignInOut);
 		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.ReInitializeResponse> requestOrder() {
+	private CompletionStage<Delivery.ReInitializeResponse> requestOrder(PlaceOrder placeOrder) {
 		log.info("serving requestOrder request");
+		log.info("placeOrder: " + placeOrder);
 		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.ReInitializeResponse> agentSignOut() {
+	private CompletionStage<Delivery.ReInitializeResponse> agentSignOut(AgentSignInOut agentSignInOut) {
 		log.info("serving agentSignOut request");
+		log.info("agentSignInOut: " + agentSignInOut);
 		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.ReInitializeResponse> orderDelivered() {
+	private CompletionStage<Delivery.ReInitializeResponse> orderDelivered(OrderDelivered orderDelivered) {
 		log.info("serving orderDelivered request");
+		log.info("orderDelivered: " + orderDelivered);
 		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
 	}
 
@@ -151,7 +159,9 @@ public class DeliveryRoutes {
 	 */
 	Route agentSignInRoute = concat(
 			pathEnd(() -> concat(
-					post(() -> onSuccess(agentSignIn(), (t) -> complete(StatusCodes.OK))))));
+				post(() -> entity(
+					Jackson.unmarshaller(AgentSignInOut.class),
+					agent -> onSuccess(agentSignIn(agent), (t) -> complete(StatusCodes.OK)))))));
 
 	/**
 	 * request      - get /agent/num
@@ -179,7 +189,9 @@ public class DeliveryRoutes {
 	 */
 	Route orderDeliveredRoute = concat(
 			pathEnd(() -> concat(
-					post(() -> onSuccess(orderDelivered(), (t) -> complete(StatusCodes.OK))))));
+				post(() -> entity(
+					Jackson.unmarshaller(OrderDelivered.class),
+					order -> onSuccess(orderDelivered(order), (t) -> complete(StatusCodes.OK)))))));
 
 	/**
 	 * request - post /agentSignOut
@@ -188,7 +200,9 @@ public class DeliveryRoutes {
 	 */
 	Route agentSignOutRoute = concat(
 			pathEnd(() -> concat(
-					post(() -> onSuccess(agentSignOut(), (t) -> complete(StatusCodes.OK))))));
+				post(() -> entity(
+					Jackson.unmarshaller(AgentSignInOut.class),
+					agent -> onSuccess(agentSignOut(agent), (t) -> complete(StatusCodes.OK)))))));
 
 	/**
 	 * request      - post /requestOrder
@@ -198,7 +212,9 @@ public class DeliveryRoutes {
 	 */
 	Route requestOrderRoute = concat(
 			pathEnd(() -> concat(
-					post(() -> onSuccess(requestOrder(), (t) -> complete(StatusCodes.OK))))));
+					post(() -> entity(
+							Jackson.unmarshaller(PlaceOrder.class),
+							requestOrder -> onSuccess(requestOrder(requestOrder), (t) -> complete(StatusCodes.OK)))))));
 
 	/**
 	 * Route : /reInitialize post
