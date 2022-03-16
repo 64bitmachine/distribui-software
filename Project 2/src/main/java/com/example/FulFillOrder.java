@@ -3,6 +3,8 @@ package com.example;
 import java.util.Map;
 
 import com.example.Agent.AgentCommand;
+import com.example.dto.DeliveryAgent;
+import com.example.dto.OrderStatus;
 import com.example.dto.PlaceOrder;
 
 import akka.actor.typed.ActorRef;
@@ -15,13 +17,20 @@ import akka.actor.typed.javadsl.Receive;
 public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     private Map<Integer, ActorRef<AgentCommand>> agentMap;
     private PlaceOrder placeOrder;
-
+    private Integer orderId;
+    private String  orderStatus;
+    private Integer agentId;
+    private ActorRef<Agent.AgentCommand> agentRef;
     public FulFillOrder(ActorContext<Command> context, PlaceOrder placeOrder,
+            Integer orderId,
             Map<Integer, ActorRef<AgentCommand>> agentMap) {
         super(context);
         this.placeOrder = placeOrder;
         this.agentMap = agentMap;
-
+        this.orderId = orderId; 
+        this.orderStatus = OrderStatus.unassigned; 
+        this.agentId = null;
+        this.agentRef = null;      
         //@TODO Using hhtp client connect to wallet and restaurant
         placeOrder();
     }
@@ -30,25 +39,42 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     }
 
     public static class ActorStatus implements Command {
+        private ActorRef<Agent.AgentCommand> agentReplyTo;
 
+        private DeliveryAgent agent;
+        ActorStatus(ActorRef<Agent.AgentCommand> agentReplyTo, DeliveryAgent agent){
+            this.agentReplyTo = agentReplyTo;
+            this.agent = agent;
+        }
     }
-
-    public static class ActorStatusResponse {
-
+    public static class AgentAssignConfirm implements Command
+    {
+        private ActorRef<Agent.AgentCommand> agentReplyTo;
+        private DeliveryAgent agent;
+        private Boolean isAssigned;
+        AgentAssignConfirm(ActorRef<Agent.AgentCommand> agentReplyTo, DeliveryAgent agent, Boolean isAssigned ){
+            this.agentReplyTo = agentReplyTo;
+            this.agent = agent;
+            this.isAssigned = isAssigned;
+        }
+    }
+    public static class ActorStatusResponse{
+        
     }
 
     public static class OrderDelivered implements Command {
 
     }
 
-    public static Behavior<Command> create(PlaceOrder placeOrder, Map<Integer, ActorRef<AgentCommand>> agentMap) {
-        return Behaviors.setup(context -> new FulFillOrder(context, placeOrder, agentMap));
+    public static Behavior<Command> create(PlaceOrder placeOrder, Integer orderId, Map<Integer, ActorRef<AgentCommand>> agentMap) {
+        return Behaviors.setup(context -> new FulFillOrder(context, placeOrder, orderId, agentMap));
     }
 
     @Override
     public Receive<Command> createReceive() {
         return newReceiveBuilder()
         .onMessage(ActorStatus.class, this::onActorStatus)
+        .onMessage(AgentAssignConfirm.class, this::onAgentAssignConfirm)
         .onMessage(OrderDelivered.class, this::onOrderDelivered)
         .build();
     }
@@ -56,9 +82,30 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     private Behavior<Command> onActorStatus(ActorStatus actorStatus)
     {
         //TODO Implement onActorStatus
-        return null;
+        
+        /** If we are recieving ActorStatus Message, it simply means that
+         * actor is available while sending the ActorStatus Message to 
+         * FulFill Order
+         */
+        if(orderStatus.equals(OrderStatus.unassigned))
+        {
+            actorStatus.agentReplyTo.tell(new Agent.AssignRequest(orderId,getContext().getSelf()));
+            agentId = actorStatus.agent.getAgentId();
+            agentRef = actorStatus.agentReplyTo;
+        }
+        return Behaviors.same();
     }
 
+    private Behavior<Command> onAgentAssignConfirm(AgentAssignConfirm message){
+        // ? For now I am resetting the value if agent fail to assign. 
+        //Need to discuss
+        if(message.agent.getAgentId() ==agentId && message.isAssigned == false)
+        {
+            agentId = null;
+            agentRef = null;
+        }
+        return this;
+    }
     private Behavior<Command> onOrderDelivered(OrderDelivered orderDelivered)
     {
         //TODO Implement OrderDelivered

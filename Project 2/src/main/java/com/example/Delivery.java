@@ -1,8 +1,11 @@
 package com.example;
 
+import java.util.List;
 import java.util.Map;
 
 import com.example.Agent.AgentCommand;
+import com.example.DBInit.ReadDB;
+import com.example.dto.DeliveryAgent;
 import com.example.dto.PlaceOrder;
 
 import org.slf4j.Logger;
@@ -21,19 +24,30 @@ import akka.actor.typed.javadsl.Receive;
 public class Delivery extends AbstractBehavior<Delivery.Command> {
 
     private final static Logger log = LoggerFactory.getLogger(Delivery.class);
-    private Map<Integer,ActorRef<AgentCommand>> agentMap;
-    private long orderId;
+    private Map<Integer, ActorRef<AgentCommand>> agentMap;
+    private Map<Integer, ActorRef<FulFillOrder.Command>> orderMap;
+    private Integer orderId;
+
     // actor protocol
     interface Command {
     }
 
     public Delivery(ActorContext<Command> context) {
         super(context);
-        orderId  = 1000l;
+        orderId = 1000;
         log.info("Delivery started");
-        //TODO ReadData from the InitData.txt file
-        //TODO Create as many agents as specified in above file
-        //TODO Put them in agentMap
+        // TODO ReadData from the InitData.txt file
+        ReadDB readfile = new ReadDB();
+        List<DeliveryAgent> deliveryAgents = readfile.readDeliveryAgentIDFromFile();
+
+        // TODO Create as many agents as specified in above file and Put entry in
+        // agentMap
+
+        for (DeliveryAgent agent : deliveryAgents) {
+            ActorRef<Agent.AgentCommand> agentRef = context.spawn(
+                    Agent.create(agent.getAgentId(), agent.getStatus()), "agent-" + agent.getAgentId());
+            agentMap.put(agent.getAgentId(), agentRef);
+        }
     }
 
     public final static class ReInitializeResponse {
@@ -48,11 +62,11 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         }
     }
 
-
     public final static class RequestOrder implements Command {
         public final ActorRef<RequestOrderResponse> replyTo;
         public final PlaceOrder placeOrder;
-        public RequestOrder(ActorRef<RequestOrderResponse> replyTo,PlaceOrder placeOrder) {
+
+        public RequestOrder(ActorRef<RequestOrderResponse> replyTo, PlaceOrder placeOrder) {
             this.replyTo = replyTo;
             this.placeOrder = placeOrder;
         }
@@ -65,6 +79,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
             this.replyTo = replyTo;
         }
     }
+
     public final static class ActionPerformed implements Command {
         public final String description;
 
@@ -95,7 +110,14 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     private Behavior<Command> onRequestOrder(RequestOrder reqOrder) {
-        getContext().spawn(FulFillOrder.create(reqOrder.placeOrder,agentMap), "Order-"+orderId);
+        /**For each Order Request we are spawning new actor and storing it
+        * order map.
+        */
+        ActorRef<FulFillOrder.Command> orderActor = getContext().spawn(
+                FulFillOrder.create(reqOrder.placeOrder, orderId, agentMap),
+                "Order-" + orderId);
+        orderMap.put(orderId,orderActor);
+
         orderId++;
         log.info("onReInitialize");
         reqOrder.replyTo.tell(new RequestOrderResponse());
