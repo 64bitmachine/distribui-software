@@ -1,8 +1,8 @@
 package com.example;
 
 import com.example.FulFillOrder.ActorStatus;
-import com.example.FulFillOrder.ActorStatusResponse;
-import com.example.FulFillOrder.AgentAssignConfirm;
+/* import com.example.FulFillOrder.ActorStatusResponse;
+import com.example.FulFillOrder.AgentAssignConfirm; */
 import com.example.dto.DeliveryAgent;
 import com.example.dto.DeliveryAgentStatus;
 
@@ -12,7 +12,8 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
-import ch.qos.logback.core.Context;
+import scala.concurrent.impl.FutureConvertersImpl.P;
+
 
 public class Agent extends AbstractBehavior<Agent.AgentCommand> {
 
@@ -22,28 +23,36 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
     private Integer orderId;
     interface AgentCommand {
     }
-
-    static class AvailableRequest implements AgentCommand {
-        ActorRef<FulFillOrder.Command> replyTo;
-        AvailableRequest(ActorRef<FulFillOrder.Command> replyTo)
-        {
-            this.replyTo = replyTo;
-        }
+    static class SignIn implements AgentCommand{
+        
     }
-    static class AssignRequest implements AgentCommand{
-        Integer orderId = null;
+    static class AvailableRequest implements AgentCommand {
+        Integer orderId;
         ActorRef<FulFillOrder.Command> replyTo;
-        AssignRequest(Integer orderId,ActorRef<FulFillOrder.Command> replyTo)
+        AvailableRequest(Integer orderId,ActorRef<FulFillOrder.Command> replyTo)
         {
             this.orderId = orderId;
             this.replyTo = replyTo;
         }
     }
+    static class ConfirmationRequest implements AgentCommand{
+        boolean isConfirmed;
+        Integer orderId = null;
+        ActorRef<FulFillOrder.Command> replyTo;
+        ConfirmationRequest(Integer orderId, boolean isConfirmed ,ActorRef<FulFillOrder.Command> replyTo)
+        {
+            this.orderId = orderId;
+            this.replyTo = replyTo;
+            this.isConfirmed = isConfirmed;
+        }
+    }
     static class AvailableResponse { 
+
     }
 
     public Agent(ActorContext<AgentCommand> context, Integer agentId, String agentStatus) {
         super(context);
+        getContext().getLog().info("Starting Actor Agent {}",agentId);
         agent = new DeliveryAgent(agentId,agentStatus);
     }
 
@@ -51,8 +60,17 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
     public Receive<AgentCommand> createReceive() {
         return newReceiveBuilder()
         .onMessage(AvailableRequest.class,this::onAvailableRequest)
-        .onMessage(AssignRequest.class,this::onAssignRequest)
+        .onMessage(ConfirmationRequest.class,this::onConfirmationRequest)
+        .onMessage(SignIn.class, this::onSignIn)
         .build();
+    }
+    
+    private Behavior<AgentCommand> onSignIn(SignIn signIn)
+    {
+        //TODO : NEED TO IMPLEMENT Agent Sign Notification Going back to Delivery Actor which will allot agent to
+        //Pending Order based on OrderId
+        agent.setStatus(DeliveryAgentStatus.available);
+        return Behaviors.same();
     }
     private Behavior<AgentCommand> onAvailableRequest(AvailableRequest request)
     {
@@ -60,8 +78,14 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
 
         /** If Agent is available,send the message. */
         if(agent.getStatus().equals(DeliveryAgentStatus.available))
+        {
+            getContext().getLog().info("Sending ActorStatus from {} to FulFillOrder for order Id {}",agent.getAgentId(), orderId);
+            orderId = request.orderId;
+            agent.setStatus(DeliveryAgentStatus.unavailable);
             request.replyTo.tell(new ActorStatus(getContext().getSelf(),
             agent));
+        }
+            
         
         /** If Agent is unavailable or offline, do not send
          *  any message
@@ -69,18 +93,23 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
         return Behaviors.same();
     }
 
-    private Behavior<AgentCommand> onAssignRequest(AssignRequest request)
+    private Behavior<AgentCommand> onConfirmationRequest(ConfirmationRequest request)
     {
-        //TODO: Do Something on receiving Assign Request
-        /**IF agent is unavailble then assign orderId to agent and make
-        * the agent unavailable and send response to OrderId to get the
-        * order assigned.
+        //TODO: Do Something on receiving Confirmation Request
+        /**If agent is not assigned to desired orderId then set the agent back
+         * available.
         */
-        if(!agent.getStatus().equals(DeliveryAgentStatus.available))
-        {
-            request.replyTo.tell(new AgentAssignConfirm(getContext().getSelf(),agent,
-            false));
+        // if(!agent.getStatus().equals(DeliveryAgentStatus.available))
+        // {
+        //     // request.replyTo.tell(new AgentAssignConfirm(getContext().getSelf(),agent,
+        //     // false));
+        // }
 
+        if(!request.isConfirmed && orderId.equals(request.orderId))
+        {
+            getContext().getLog().info("Agent : Making Agent with agentId {} avialable as order Id {} is already assigned",agent.getAgentId(), orderId);
+            agent.setStatus(DeliveryAgentStatus.available);
+            orderId = null;
         }
         return Behaviors.same();
     }

@@ -1,11 +1,13 @@
 package com.example;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.example.Agent.AgentCommand;
 import com.example.DBInit.ReadDB;
 import com.example.dto.DeliveryAgent;
+import com.example.dto.OrderStatus;
 import com.example.dto.PlaceOrder;
 
 import org.slf4j.Logger;
@@ -39,11 +41,11 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         // TODO ReadData from the InitData.txt file
         ReadDB readfile = new ReadDB();
         List<DeliveryAgent> deliveryAgents = readfile.readDeliveryAgentIDFromFile();
-
-        // TODO Create as many agents as specified in above file and Put entry in
-        // agentMap
-
+        agentMap = new HashMap<>();
+        orderMap = new HashMap<>();
+        // TODO Create as many agents as specified in above file and Put entry in agentMap
         for (DeliveryAgent agent : deliveryAgents) {
+            log.info("Sending Agent for creation with agentId {}, agentStatus {}",agent.getAgentId(), agent.getStatus());
             ActorRef<Agent.AgentCommand> agentRef = context.spawn(
                     Agent.create(agent.getAgentId(), agent.getStatus()), "agent-" + agent.getAgentId());
             agentMap.put(agent.getAgentId(), agentRef);
@@ -59,6 +61,15 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     public final static class RequestOrderResponse {
         public RequestOrderResponse() {
             log.info("ReInitializeResponse");
+        }
+    }
+
+    public final static class AgentSignIn implements Command {
+        public final Integer agentId;
+        public final ActorRef<AgentSignIn> replyTo;
+        public AgentSignIn(ActorRef<AgentSignIn> replyTo,Integer agentId) {
+            this.agentId = agentId;
+            this.replyTo = replyTo;
         }
     }
 
@@ -106,9 +117,16 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         return newReceiveBuilder()
                 .onMessage(ReInitialize.class, this::onReInitialize)
                 .onMessage(RequestOrder.class, this::onRequestOrder)
+                .onMessage(AgentSignIn.class, this::onAgentSignIn)
                 .build();
     }
 
+    private Behavior<Command> onAgentSignIn(AgentSignIn agentSignIn)
+    {
+        log.info("Agent with Id {} has signed in",agentSignIn.agentId);
+        agentMap.get(agentSignIn.agentId).tell(new Agent.SignIn());
+        return Behaviors.same();
+    }
     private Behavior<Command> onRequestOrder(RequestOrder reqOrder) {
         /**For each Order Request we are spawning new actor and storing it
         * order map.

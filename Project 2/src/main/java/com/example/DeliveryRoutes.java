@@ -69,10 +69,10 @@ public class DeliveryRoutes {
 		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.ReInitializeResponse> agentSignIn(AgentSignInOut agentSignInOut) {
+	private CompletionStage<Delivery.AgentSignIn> agentSignIn(AgentSignInOut agentSignInOut) {
 		log.info("serving agentSignIn request");
 		log.info("agentSignInOut: " + agentSignInOut);
-		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
+		return AskPattern.ask(deliveryActor, ref -> new Delivery.AgentSignIn(ref,agentSignInOut.getAgentId()), askTimeout, scheduler);
 	}
 
 	private CompletionStage<Delivery.RequestOrderResponse> requestOrder(PlaceOrder placeOrder) {
