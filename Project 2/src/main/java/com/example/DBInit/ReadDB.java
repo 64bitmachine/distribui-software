@@ -14,7 +14,7 @@ public class ReadDB {
     private final String DB_FILE;
 
     public ReadDB() {
-        DB_FILE = "Project 2/src/main/java/com/example/DBInit/initialData.txt";
+        DB_FILE = "initialData.txt";
     }
 
     public ArrayList<DeliveryAgent> readDeliveryAgentIDFromFile() {
@@ -23,8 +23,9 @@ public class ReadDB {
             // read the text file
             String line;
             
-            // read the file from filesystem and store it in a string
-            File file = new File(DB_FILE);
+            // read the file from resources
+            ClassLoader classLoader = getClass().getClassLoader();
+            File file = new File(classLoader.getResource(DB_FILE).toURI());
             BufferedReader br = new BufferedReader(new FileReader(file));
 
             int starCount = 0;
@@ -48,6 +49,7 @@ public class ReadDB {
             br.close();
         } catch (Exception e) {
             e.printStackTrace();
+            System.exit(1);
         }
         return deliveryAgents;
     }

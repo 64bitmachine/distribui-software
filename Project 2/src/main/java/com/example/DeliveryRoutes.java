@@ -69,10 +69,8 @@ public class DeliveryRoutes {
 		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.AgentSignIn> agentSignIn(AgentSignInOut agentSignInOut) {
-		log.info("serving agentSignIn request");
-		log.info("agentSignInOut: " + agentSignInOut);
-		return AskPattern.ask(deliveryActor, ref -> new Delivery.AgentSignIn(ref,agentSignInOut.getAgentId()), askTimeout, scheduler);
+	private CompletionStage<Delivery.AgentSignInOutResponse> agentSignIn(AgentSignInOut agentSignInOut) {
+		return AskPattern.ask(deliveryActor, ref -> new Delivery.AgentSignInOutCommand(ref, agentSignInOut.getAgentId(), true), askTimeout, scheduler);
 	}
 
 	private CompletionStage<Delivery.RequestOrderResponse> requestOrder(PlaceOrder placeOrder) {
@@ -81,10 +79,8 @@ public class DeliveryRoutes {
 		return AskPattern.ask(deliveryActor, ref -> new Delivery.RequestOrder(ref,placeOrder), askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.ReInitializeResponse> agentSignOut(AgentSignInOut agentSignInOut) {
-		log.info("serving agentSignOut request");
-		log.info("agentSignInOut: " + agentSignInOut);
-		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
+	private CompletionStage<Delivery.AgentSignInOutResponse> agentSignOut(AgentSignInOut agentSignInOut) {
+		return AskPattern.ask(deliveryActor, ref -> new Delivery.AgentSignInOutCommand(ref, agentSignInOut.getAgentId(), false), askTimeout, scheduler);
 	}
 
 	private CompletionStage<Delivery.ReInitializeResponse> orderDelivered(OrderDelivered orderDelivered) {
@@ -98,9 +94,8 @@ public class DeliveryRoutes {
 		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.ReInitializeResponse> getAgent() {
-		log.info("serving getAgent request");
-		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
+	private CompletionStage<Agent.GetAgentResponse> getAgent(String num) {
+		return AskPattern.ask(deliveryActor, ref -> new Delivery.GetAgentCmd(ref, num), askTimeout, scheduler);
 	}
 
 	/**
@@ -150,7 +145,7 @@ public class DeliveryRoutes {
 	 */
 	Route reInitializeRoute = concat(
 			pathEnd(() -> concat(
-					post(() -> onSuccess(reInitialize(), (t) -> complete(StatusCodes.OK))))));
+					post(() -> onSuccess(reInitialize(), (t) -> complete(StatusCodes.CREATED))))));
 
 	/**
 	 * request - post /agentSignIn
@@ -161,7 +156,7 @@ public class DeliveryRoutes {
 			pathEnd(() -> concat(
 				post(() -> entity(
 					Jackson.unmarshaller(AgentSignInOut.class),
-					agent -> onSuccess(agentSignIn(agent), (t) -> complete(StatusCodes.OK)))))));
+					agent -> onSuccess(agentSignIn(agent), (t) -> complete(StatusCodes.CREATED)))))));
 
 	/**
 	 * request      - get /agent/num
@@ -169,8 +164,8 @@ public class DeliveryRoutes {
 	 * 				- {"agentId": num, "status": y}
 	 */
 	Route agentRoute = concat(
-			pathEnd(() -> concat(
-					get(() -> onSuccess(getAgent(), (t) -> complete(StatusCodes.OK))))));
+			path(PathMatchers.segment(), (String num) -> concat(
+					get(() -> onSuccess(getAgent(num), performed -> complete(StatusCodes.OK, performed.agent, Jackson.marshaller()))))));
 
 	/**
 	 * request      - get /order/num
@@ -202,7 +197,7 @@ public class DeliveryRoutes {
 			pathEnd(() -> concat(
 				post(() -> entity(
 					Jackson.unmarshaller(AgentSignInOut.class),
-					agent -> onSuccess(agentSignOut(agent), (t) -> complete(StatusCodes.OK)))))));
+					agent -> onSuccess(agentSignOut(agent), (t) -> complete(StatusCodes.CREATED)))))));
 
 	/**
 	 * request      - post /requestOrder

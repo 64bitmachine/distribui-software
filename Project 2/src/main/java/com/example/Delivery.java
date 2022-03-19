@@ -31,13 +31,12 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     private Integer orderId;
 
     // actor protocol
-    interface Command {
-    }
+    interface Command {}
 
     public Delivery(ActorContext<Command> context) {
         super(context);
         orderId = 1000;
-        log.info("Delivery started");
+        log.info("Delivery Actor created");
         // TODO ReadData from the InitData.txt file
         ReadDB readfile = new ReadDB();
         List<DeliveryAgent> deliveryAgents = readfile.readDeliveryAgentIDFromFile();
@@ -45,7 +44,6 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         orderMap = new HashMap<>();
         // TODO Create as many agents as specified in above file and Put entry in agentMap
         for (DeliveryAgent agent : deliveryAgents) {
-            log.info("Sending Agent for creation with agentId {}, agentStatus {}",agent.getAgentId(), agent.getStatus());
             ActorRef<Agent.AgentCommand> agentRef = context.spawn(
                     Agent.create(agent.getAgentId(), agent.getStatus()), "agent-" + agent.getAgentId());
             agentMap.put(agent.getAgentId(), agentRef);
@@ -64,11 +62,28 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         }
     }
 
-    public final static class AgentSignIn implements Command {
-        public final Integer agentId;
-        public final ActorRef<AgentSignIn> replyTo;
-        public AgentSignIn(ActorRef<AgentSignIn> replyTo,Integer agentId) {
+    public final static class AgentSignInOutCommand implements Command {
+        public final int agentId;
+        public final ActorRef<AgentSignInOutResponse> replyTo;
+        public final boolean isSignIn;
+
+        public AgentSignInOutCommand(ActorRef<AgentSignInOutResponse> replyTo, int agentId, boolean isSignIn) {
             this.agentId = agentId;
+            this.replyTo = replyTo;
+            this.isSignIn = isSignIn;
+        }
+    }
+
+    public final static class AgentSignInOutResponse implements Command {
+        public AgentSignInOutResponse() {}
+    }
+
+    public final static class GetAgentCmd implements Command {
+        public final int agentId;
+        public final ActorRef<Agent.GetAgentResponse> replyTo;
+
+        public GetAgentCmd(ActorRef<Agent.GetAgentResponse> replyTo, String agentId) {
+            this.agentId = Integer.parseInt(agentId);
             this.replyTo = replyTo;
         }
     }
@@ -117,16 +132,18 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         return newReceiveBuilder()
                 .onMessage(ReInitialize.class, this::onReInitialize)
                 .onMessage(RequestOrder.class, this::onRequestOrder)
-                .onMessage(AgentSignIn.class, this::onAgentSignIn)
+                .onMessage(AgentSignInOutCommand.class, this::onAgentSignInOut)
+                .onMessage(GetAgentCmd.class, this::onGetAgent)
                 .build();
     }
 
-    private Behavior<Command> onAgentSignIn(AgentSignIn agentSignIn)
-    {
-        log.info("Agent with Id {} has signed in",agentSignIn.agentId);
-        agentMap.get(agentSignIn.agentId).tell(new Agent.SignIn());
+    private Behavior<Command> onAgentSignInOut(AgentSignInOutCommand agentSignInCmd) {
+        log.info("Agent with Id {} has signed in",agentSignInCmd.agentId);
+        agentMap.get(agentSignInCmd.agentId).tell(new Agent.SignInOut(agentSignInCmd.isSignIn));
+        agentSignInCmd.replyTo.tell(new AgentSignInOutResponse());
         return Behaviors.same();
     }
+    
     private Behavior<Command> onRequestOrder(RequestOrder reqOrder) {
         /**For each Order Request we are spawning new actor and storing it
         * order map.
@@ -139,6 +156,12 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         orderId++;
         log.info("onReInitialize");
         reqOrder.replyTo.tell(new RequestOrderResponse());
+        return this;
+    }
+
+    private Behavior<Command> onGetAgent(GetAgentCmd getAgentCmd) {
+        log.info("onGetAgent");
+        agentMap.get(getAgentCmd.agentId).tell(new Agent.GetAgentCmd(getAgentCmd.replyTo));
         return this;
     }
 }
