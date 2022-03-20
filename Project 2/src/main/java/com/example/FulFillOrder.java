@@ -6,6 +6,8 @@ import com.example.Agent.AgentCommand;
 import com.example.dto.DeliveryAgent;
 import com.example.dto.OrderStatus;
 import com.example.dto.PlaceOrder;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
@@ -21,25 +23,35 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     private String  orderStatus;
     private Integer agentId;
     private ActorRef<Agent.AgentCommand> agentRef;
+
+    public static final String WALLET_SERVICE = ConfigFactory.load().getConfig("my-app.wallet-server").getString("address");
+    public static final String RESTAURANT_SERVICE = ConfigFactory.load().getConfig("my-app.restaurant-server").getString("address");
+
     public FulFillOrder(ActorContext<Command> context, PlaceOrder placeOrder,
             Integer orderId,
             Map<Integer, ActorRef<AgentCommand>> agentMap) {
+        
         super(context);
+        getContext().getLog().info("Creating Order with order Id {}", orderId);
 
-        getContext().getLog().info("Starting FulFillOrder for order Id {}", orderId);
+        System.out.println("Wallet Service: " + WALLET_SERVICE);
+        System.out.println("Restaurant Service: " + RESTAURANT_SERVICE);
 
         this.placeOrder = placeOrder;
         this.agentMap = agentMap;
-        this.orderId = orderId; 
+        this.orderId = orderId;
         this.orderStatus = OrderStatus.unassigned; 
         this.agentId = null;
-        this.agentRef = null;      
+        this.agentRef = null;
         //@TODO Using hhtp client connect to wallet and restaurant
-        placeOrder();
+        // placeOrder();
+
+        
+
+        getContext().getLog().info("Order created with order Id {}, order status {}", orderId, orderStatus);
     }
 
-    interface Command {
-    }
+    interface Command {}
 
     public static class ActorStatus implements Command {
         private ActorRef<Agent.AgentCommand> agentReplyTo;
@@ -122,9 +134,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         return null;
     }
 
-    private boolean placeOrder()
-    {
-
+    private boolean placeOrder() {
         probeAgents();
         return false;
     }

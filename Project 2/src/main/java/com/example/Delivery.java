@@ -30,7 +30,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     private Integer orderId;
 
     // actor protocol
-    interface Command {}
+    interface Command {
+    }
 
     public Delivery(ActorContext<Command> context) {
         super(context);
@@ -41,7 +42,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         List<DeliveryAgent> deliveryAgents = readfile.readDeliveryAgentIDFromFile();
         agentMap = new HashMap<>();
         orderMap = new HashMap<>();
-        // TODO Create as many agents as specified in above file and Put entry in agentMap
+        // TODO Create as many agents as specified in above file and Put entry in
+        // agentMap
         for (DeliveryAgent agent : deliveryAgents) {
             ActorRef<Agent.AgentCommand> agentRef = context.spawn(
                     Agent.create(agent.getAgentId(), agent.getStatus()), "agent-" + agent.getAgentId());
@@ -51,13 +53,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
 
     public final static class ReInitializeResponse {
         public ReInitializeResponse() {
-            log.info("ReInitializeResponse");
-        }
-    }
-
-    public final static class RequestOrderResponse {
-        public RequestOrderResponse() {
-            log.info("ReInitializeResponse");
+            log.info("ReInitialize successful");
         }
     }
 
@@ -74,7 +70,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     public final static class AgentSignInOutResponse implements Command {
-        public AgentSignInOutResponse() {}
+        public AgentSignInOutResponse() {
+        }
     }
 
     public final static class GetAgentCmd implements Command {
@@ -87,6 +84,9 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         }
     }
 
+    /**
+     * this command is used to make order
+     */
     public final static class RequestOrder implements Command {
         public final ActorRef<RequestOrderResponse> replyTo;
         public final PlaceOrder placeOrder;
@@ -94,6 +94,14 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         public RequestOrder(ActorRef<RequestOrderResponse> replyTo, PlaceOrder placeOrder) {
             this.replyTo = replyTo;
             this.placeOrder = placeOrder;
+        }
+    }
+
+    public final static class RequestOrderResponse {
+        public final Integer orderId;
+
+        public RequestOrderResponse(Integer orderId) {
+            this.orderId = orderId;
         }
     }
 
@@ -119,7 +127,9 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
 
     private Behavior<Command> onReInitialize(ReInitialize command) {
         orderId = 1000;
-        orderMap.forEach((k, v) -> {getContext().stop(v);});
+        orderMap.forEach((k, v) -> {
+            getContext().stop(v);
+        });
         orderMap.clear();
         agentMap.forEach((k, v) -> v.tell(new Agent.SignInOut(false)));
         command.replyTo.tell(new ReInitializeResponse());
@@ -137,29 +147,29 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     private Behavior<Command> onAgentSignInOut(AgentSignInOutCommand agentSignInCmd) {
-        log.info("Agent with Id {} has signed in",agentSignInCmd.agentId);
+        log.info("Agent with Id {} has signed in", agentSignInCmd.agentId);
         agentMap.get(agentSignInCmd.agentId).tell(new Agent.SignInOut(agentSignInCmd.isSignIn));
         agentSignInCmd.replyTo.tell(new AgentSignInOutResponse());
         return Behaviors.same();
     }
-    
+
+    /**
+     * This method handles the request order command
+     * 
+     * @param reqOrder
+     * @return orderId
+     */
     private Behavior<Command> onRequestOrder(RequestOrder reqOrder) {
-        /**For each Order Request we are spawning new actor and storing it
-        * order map.
-        */
         ActorRef<FulFillOrder.Command> orderActor = getContext().spawn(
                 FulFillOrder.create(reqOrder.placeOrder, orderId, agentMap),
                 "Order-" + orderId);
-        orderMap.put(orderId,orderActor);
-
+        orderMap.put(orderId, orderActor);
+        reqOrder.replyTo.tell(new RequestOrderResponse(orderId));
         orderId++;
-        log.info("onReInitialize");
-        reqOrder.replyTo.tell(new RequestOrderResponse());
         return this;
     }
 
     private Behavior<Command> onGetAgent(GetAgentCmd getAgentCmd) {
-        log.info("onGetAgent");
         agentMap.get(getAgentCmd.agentId).tell(new Agent.GetAgentCmd(getAgentCmd.replyTo));
         return this;
     }

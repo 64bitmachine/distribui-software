@@ -207,7 +207,7 @@ public class DeliveryRoutes {
 			pathEnd(() -> concat(
 					post(() -> entity(
 							Jackson.unmarshaller(PlaceOrder.class),
-							requestOrder -> onSuccess(requestOrder(requestOrder), (t) -> complete(StatusCodes.OK)))))));
+							requestOrder -> onSuccess(requestOrder(requestOrder), (t) -> complete(StatusCodes.CREATED)))))));
 
 	/**
 	 * Route : /reInitialize post
