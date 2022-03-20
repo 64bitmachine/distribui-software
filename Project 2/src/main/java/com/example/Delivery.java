@@ -7,7 +7,6 @@ import java.util.Map;
 import com.example.Agent.AgentCommand;
 import com.example.DBInit.ReadDB;
 import com.example.dto.DeliveryAgent;
-import com.example.dto.OrderStatus;
 import com.example.dto.PlaceOrder;
 
 import org.slf4j.Logger;
@@ -119,10 +118,10 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     private Behavior<Command> onReInitialize(ReInitialize command) {
-        // Optional<User> maybeUser = users.stream()
-        // .filter(user -> user.name.equals(command.name))
-        // .findFirst();
-        log.info("onReInitialize");
+        orderId = 1000;
+        orderMap.forEach((k, v) -> {getContext().stop(v);});
+        orderMap.clear();
+        agentMap.forEach((k, v) -> v.tell(new Agent.SignInOut(false)));
         command.replyTo.tell(new ReInitializeResponse());
         return this;
     }

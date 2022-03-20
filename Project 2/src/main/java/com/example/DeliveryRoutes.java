@@ -1,10 +1,8 @@
 package com.example;
 
 import java.time.Duration;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
-import com.example.UserRegistry.User;
 import com.example.dto.AgentSignInOut;
 import com.example.dto.OrderDelivered;
 import com.example.dto.PlaceOrder;
