@@ -1,6 +1,6 @@
 package com.example;
 
-import com.example.FulFillOrder.ActorStatus;
+import com.example.FulFillOrder.AgentAvailableStatus;
 import com.example.dto.DeliveryAgent;
 import com.example.dto.DeliveryAgentStatus;
 
@@ -102,38 +102,26 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
     }
     
     private Behavior<AgentCommand> onAvailableRequest(AvailableRequest request) {
-        //TODO: Do Something on receiving Available Request
-
-        /** If Agent is available,send the message. */
-        if(agent.getStatus().equals(DeliveryAgentStatus.available))
-        {
-            getContext().getLog().info("Sending ActorStatus from {} to FulFillOrder for order Id {}",agent.getAgentId(), orderId);
+        
+        if(agent.getStatus().equals(DeliveryAgentStatus.available)) {
+            getContext().getLog().info("Sending AgentAvailableStatus from {} to FulFillOrder for order Id {}", agent.getAgentId(), orderId);
             orderId = request.orderId;
             agent.setStatus(DeliveryAgentStatus.unavailable);
-            request.replyTo.tell(new ActorStatus(getContext().getSelf(),
-            agent));
+            request.replyTo.tell(new AgentAvailableStatus(getContext().getSelf(), agent));
         }
-            
-        
-        /** If Agent is unavailable or offline, do not send
-         *  any message
-         */
+        else {
+            // agent is unavailable
+            getContext().getLog().info("Agent with Id {} is not available",agent.getAgentId());
+            request.replyTo.tell(new AgentAvailableStatus(getContext().getSelf(), null));
+        }
         return Behaviors.same();
     }
 
     private Behavior<AgentCommand> onConfirmationRequest(ConfirmationRequest request) {
-        //TODO: Do Something on receiving Confirmation Request
         /**If agent is not assigned to desired orderId then set the agent back
          * available.
         */
-        // if(!agent.getStatus().equals(DeliveryAgentStatus.available))
-        // {
-        //     // request.replyTo.tell(new AgentAssignConfirm(getContext().getSelf(),agent,
-        //     // false));
-        // }
-
-        if(!request.isConfirmed && orderId.equals(request.orderId))
-        {
+        if(!request.isConfirmed && orderId.equals(request.orderId)) {
             getContext().getLog().info("Agent : Making Agent with agentId {} avialable as order Id {} is already assigned",agent.getAgentId(), orderId);
             agent.setStatus(DeliveryAgentStatus.available);
             orderId = null;

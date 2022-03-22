@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import com.example.Agent.AgentCommand;
@@ -30,6 +32,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     private Integer agentId;
     private Item item;
     private ActorRef<Agent.AgentCommand> agentRef;
+    private List<Integer> agentReqList;
 
     public static final String WALLET_SERVICE = ConfigFactory.load().getConfig("my-app.wallet-server")
             .getString("address");
@@ -68,6 +71,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         this.agentId = -1;
         this.agentRef = null;
         this.item = null;
+        this.agentReqList = new ArrayList<>();
 
         // http post request to restaurant service to place order
         try {
@@ -139,6 +143,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
                 // get response code and response json object
                 if (conn.getResponseCode() == 201) {
                     getContext().getLog().info("Order placed");
+                    probeAgents();
                 } else {
                     getContext().getLog().info("Order not placed");
                 }
@@ -155,12 +160,11 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         getContext().getLog().info("Order created with order Id {}, order status {}", orderId, orderStatus);
     }
 
-    public static class ActorStatus implements Command {
-        private ActorRef<Agent.AgentCommand> agentReplyTo;
+    public final static class AgentAvailableStatus implements Command {
+        private final ActorRef<Agent.AgentCommand> agentReplyTo;
+        private final DeliveryAgent agent;
 
-        private DeliveryAgent agent;
-
-        ActorStatus(ActorRef<Agent.AgentCommand> agentReplyTo, DeliveryAgent agent) {
+        AgentAvailableStatus(ActorRef<Agent.AgentCommand> agentReplyTo, DeliveryAgent agent) {
             this.agentReplyTo = agentReplyTo;
             this.agent = agent;
         }
@@ -194,29 +198,28 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     @Override
     public Receive<Command> createReceive() {
         return newReceiveBuilder()
-                .onMessage(ActorStatus.class, this::onActorStatus)
-                // .onMessage(AgentAssignConfirm.class, this::onAgentAssignConfirm)
+                .onMessage(AgentAvailableStatus.class, this::onAgentAvailableStatus)
                 .onMessage(OrderDelivered.class, this::onOrderDelivered)
                 .onMessage(GetOrderCmd.class, this::onGetOrderCmd)
                 .build();
     }
 
-    private Behavior<Command> onActorStatus(ActorStatus actorStatus) {
-        // TODO Implement onActorStatus
-
-        /**
-         * If we are recieving ActorStatus Message, it simply means that
-         * actor is available while sending the ActorStatus Message to
-         * FulFill Order
-         */
-        if (orderStatus.equals(OrderStatus.unassigned)) {
-            getContext().getLog().info("FulFillOrder : Setting agentId to {} for order Id {}",
-                    actorStatus.agent.getAgentId(), orderId);
-            actorStatus.agentReplyTo.tell(new Agent.ConfirmationRequest(orderId, true, getContext().getSelf()));
-            agentId = actorStatus.agent.getAgentId();
-            agentRef = actorStatus.agentReplyTo;
+    private Behavior<Command> onAgentAvailableStatus(AgentAvailableStatus agentAvailableStatus) {
+        
+        if (agentAvailableStatus.agent != null) {
+            if (orderStatus.equals(OrderStatus.unassigned)) {
+                getContext().getLog().info("FulFillOrder : Setting agentId to {} for order Id {}",
+                        agentAvailableStatus.agent.getAgentId(), orderId);
+                agentAvailableStatus.agentReplyTo.tell(new Agent.ConfirmationRequest(orderId, true, getContext().getSelf()));
+                this.agentId = agentAvailableStatus.agent.getAgentId();
+                this.agentRef = agentAvailableStatus.agentReplyTo;
+                this.agentReqList.clear();
+                this.orderStatus = OrderStatus.assigned;
+                // intimidate agent assigned to Delivery Actor
+            }    
         } else {
-            actorStatus.agentReplyTo.tell(new Agent.ConfirmationRequest(orderId, false, getContext().getSelf()));
+            // previously requested agent is not available, so request for another agent
+            probeAgents();
         }
         return Behaviors.same();
     }
@@ -237,18 +240,17 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         return null;
     }
 
-    private boolean placeOrder() {
-        probeAgents();
-        return false;
-    }
 
     private void probeAgents() {
-        /** Will receive ActorStatus Message if agent is available */
-        for (Integer id : agentMap.keySet()) {
-            getContext().getLog().info("Sending AvailableRequest to {} from FulFillOrder for order Id {}", id, orderId);
-
-            agentMap.get(id).tell(new Agent.AvailableRequest(orderId, getContext().getSelf()));
-        }
+        getContext().getLog().info("FulFillOrder : Probing agents for order Id {}", orderId);
+        agentMap.forEach((agentId, agentRef) -> {
+            if (!this.agentReqList.contains(agentId)) {
+                getContext().getLog().info("FulFillOrder : Sending ActorStatus to agent {} for order Id {}",
+                        agentId, orderId);
+                agentRef.tell(new Agent.AvailableRequest(orderId, getContext().getSelf()));
+                this.agentReqList.add(agentId);
+            }
+        });
     }
 
     private Behavior<Command> onGetOrderCmd(GetOrderCmd getOrderCmd) {

@@ -1,8 +1,7 @@
 package com.example;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.TreeMap;
 
 import com.example.Agent.AgentCommand;
 import com.example.DBInit.ReadDB;
@@ -25,8 +24,8 @@ import akka.actor.typed.javadsl.Receive;
 public class Delivery extends AbstractBehavior<Delivery.Command> {
 
     private final static Logger log = LoggerFactory.getLogger(Delivery.class);
-    private Map<Integer, ActorRef<AgentCommand>> agentMap;
-    private Map<Integer, ActorRef<FulFillOrder.Command>> orderMap;
+    private TreeMap<Integer, ActorRef<AgentCommand>> agentMap;
+    private TreeMap<Integer, ActorRef<FulFillOrder.Command>> orderMap;
     private Integer orderId;
 
     // actor protocol
@@ -40,8 +39,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         // TODO ReadData from the InitData.txt file
         ReadDB readfile = new ReadDB();
         List<DeliveryAgent> deliveryAgents = readfile.readDeliveryAgentIDFromFile();
-        agentMap = new HashMap<>();
-        orderMap = new HashMap<>();
+        agentMap = new TreeMap<>();
+        orderMap = new TreeMap<>();
         // TODO Create as many agents as specified in above file and Put entry in
         // agentMap
         for (DeliveryAgent agent : deliveryAgents) {
