@@ -68,17 +68,21 @@ public class DeliveryRoutes {
 	}
 
 	private CompletionStage<Delivery.AgentSignInOutResponse> agentSignIn(AgentSignInOut agentSignInOut) {
-		return AskPattern.ask(deliveryActor, ref -> new Delivery.AgentSignInOutCommand(ref, agentSignInOut.getAgentId(), true), askTimeout, scheduler);
+		return AskPattern.ask(deliveryActor,
+				ref -> new Delivery.AgentSignInOutCommand(ref, agentSignInOut.getAgentId(), true), askTimeout,
+				scheduler);
 	}
 
 	private CompletionStage<Delivery.RequestOrderResponse> requestOrder(PlaceOrder placeOrder) {
 		log.info("serving requestOrder request");
 		log.info("placeOrder: " + placeOrder);
-		return AskPattern.ask(deliveryActor, ref -> new Delivery.RequestOrder(ref,placeOrder), askTimeout, scheduler);
+		return AskPattern.ask(deliveryActor, ref -> new Delivery.RequestOrder(ref, placeOrder), askTimeout, scheduler);
 	}
 
 	private CompletionStage<Delivery.AgentSignInOutResponse> agentSignOut(AgentSignInOut agentSignInOut) {
-		return AskPattern.ask(deliveryActor, ref -> new Delivery.AgentSignInOutCommand(ref, agentSignInOut.getAgentId(), false), askTimeout, scheduler);
+		return AskPattern.ask(deliveryActor,
+				ref -> new Delivery.AgentSignInOutCommand(ref, agentSignInOut.getAgentId(), false), askTimeout,
+				scheduler);
 	}
 
 	private CompletionStage<Delivery.ReInitializeResponse> orderDelivered(OrderDelivered orderDelivered) {
@@ -87,9 +91,8 @@ public class DeliveryRoutes {
 		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.ReInitializeResponse> getOrder() {
-		log.info("serving getOrder request");
-		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
+	private CompletionStage<FulFillOrder.GetOrderResponse> getOrder(String num) {
+		return AskPattern.ask(deliveryActor, ref -> new Delivery.GetOrderCmd(ref, num), askTimeout, scheduler);
 	}
 
 	private CompletionStage<Agent.GetAgentResponse> getAgent(String num) {
@@ -152,28 +155,32 @@ public class DeliveryRoutes {
 	 */
 	Route agentSignInRoute = concat(
 			pathEnd(() -> concat(
-				post(() -> entity(
-					Jackson.unmarshaller(AgentSignInOut.class),
-					agent -> onSuccess(agentSignIn(agent), (t) -> complete(StatusCodes.CREATED)))))));
+					post(() -> entity(
+							Jackson.unmarshaller(AgentSignInOut.class),
+							agent -> onSuccess(agentSignIn(agent), (t) -> complete(StatusCodes.CREATED)))))));
 
 	/**
-	 * request      - get /agent/num
-	 * response     - http code 200
-	 * 				- {"agentId": num, "status": y}
+	 * request - get /agent/num
+	 * response - http code 200
+	 * - {"agentId": num, "status": y}
 	 */
 	Route agentRoute = concat(
 			path(PathMatchers.segment(), (String num) -> concat(
-					get(() -> onSuccess(getAgent(num), performed -> complete(StatusCodes.OK, performed.agent, Jackson.marshaller()))))));
+					get(() -> onSuccess(getAgent(num),
+							performed -> complete(StatusCodes.OK, performed.agent, Jackson.marshaller()))))));
 
 	/**
-	 * request      - get /order/num
-	 * response     - http code 404 if no order
-	 * 				- http code 200 if has order
-	 * 				- {"orderId":num, "status": x, "agentId": y}
+	 * request - get /order/num
+	 * response - http code 404 if no order
+	 * - http code 200 if has order
+	 * - {"orderId":num, "status": x, "agentId": y}
 	 */
 	Route orderRoute = concat(
-			pathEnd(() -> concat(
-					get(() -> onSuccess(getOrder(), (t) -> complete(StatusCodes.OK))))));
+			path(PathMatchers.segment(), (String num) -> concat(
+					get(() -> onSuccess(getOrder(num),
+							performed -> performed.order == null
+									? complete(StatusCodes.NOT_FOUND)
+									: complete(StatusCodes.OK, performed.order, Jackson.marshaller()))))));
 
 	/**
 	 * request - post /orderDelivered
@@ -182,9 +189,9 @@ public class DeliveryRoutes {
 	 */
 	Route orderDeliveredRoute = concat(
 			pathEnd(() -> concat(
-				post(() -> entity(
-					Jackson.unmarshaller(OrderDelivered.class),
-					order -> onSuccess(orderDelivered(order), (t) -> complete(StatusCodes.OK)))))));
+					post(() -> entity(
+							Jackson.unmarshaller(OrderDelivered.class),
+							order -> onSuccess(orderDelivered(order), (t) -> complete(StatusCodes.OK)))))));
 
 	/**
 	 * request - post /agentSignOut
@@ -193,21 +200,22 @@ public class DeliveryRoutes {
 	 */
 	Route agentSignOutRoute = concat(
 			pathEnd(() -> concat(
-				post(() -> entity(
-					Jackson.unmarshaller(AgentSignInOut.class),
-					agent -> onSuccess(agentSignOut(agent), (t) -> complete(StatusCodes.CREATED)))))));
+					post(() -> entity(
+							Jackson.unmarshaller(AgentSignInOut.class),
+							agent -> onSuccess(agentSignOut(agent), (t) -> complete(StatusCodes.CREATED)))))));
 
 	/**
-	 * request      - post /requestOrder
-	 * requestbody  - {"custId": num, "restId": x, "itemId": y, "qty": z}
-	 * response     - http code 201 if success { "orderId": num }
-	 * 				- http code 410 if fail
+	 * request - post /requestOrder
+	 * requestbody - {"custId": num, "restId": x, "itemId": y, "qty": z}
+	 * response - http code 201 if success { "orderId": num }
+	 * - http code 410 if fail
 	 */
 	Route requestOrderRoute = concat(
 			pathEnd(() -> concat(
 					post(() -> entity(
 							Jackson.unmarshaller(PlaceOrder.class),
-							requestOrder -> onSuccess(requestOrder(requestOrder), (t) -> complete(StatusCodes.CREATED)))))));
+							requestOrder -> onSuccess(requestOrder(requestOrder),
+									(t) -> complete(StatusCodes.CREATED)))))));
 
 	/**
 	 * Route : /reInitialize post

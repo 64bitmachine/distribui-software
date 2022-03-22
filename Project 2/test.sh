@@ -29,3 +29,7 @@ sleep 1
 curl -X GET localhost:8082/balance/301
 curl -X GET localhost:8082/balance/302
 echo ""
+curl -X GET localhost:8081/order/1000
+echo ""
+curl -X GET localhost:8081/order/1002
+echo ""

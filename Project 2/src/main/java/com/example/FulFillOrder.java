@@ -10,6 +10,7 @@ import java.util.Map;
 import com.example.Agent.AgentCommand;
 import com.example.dto.DeliveryAgent;
 import com.example.dto.Item;
+import com.example.dto.OrderPlaced;
 import com.example.dto.OrderStatus;
 import com.example.dto.PlaceOrder;
 import com.typesafe.config.ConfigFactory;
@@ -31,12 +32,31 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     private ActorRef<Agent.AgentCommand> agentRef;
 
     public static final String WALLET_SERVICE = ConfigFactory.load().getConfig("my-app.wallet-server")
-                                                                                .getString("address");
+            .getString("address");
     public static final String RESTAURANT_SERVICE = ConfigFactory.load().getConfig("my-app.restaurant-server")
-                                                                                .getString("address");
+            .getString("address");
+
+    interface Command {
+    }
+
+    public final static class GetOrderResponse {
+        final OrderPlaced order;
+
+        public GetOrderResponse(OrderPlaced order) {
+            this.order = order;
+        }
+    }
+
+    public final static class GetOrderCmd implements Command {
+        final ActorRef<GetOrderResponse> replyTo;
+
+        public GetOrderCmd(ActorRef<GetOrderResponse> replyTo) {
+            this.replyTo = replyTo;
+        }
+    }
 
     public FulFillOrder(ActorContext<Command> context, PlaceOrder placeOrder,
-                    Integer orderId, Map<Integer, ActorRef<AgentCommand>> agentMap) {
+            Integer orderId, Map<Integer, ActorRef<AgentCommand>> agentMap) {
 
         super(context);
         getContext().getLog().info("Creating Order with order Id {}", orderId);
@@ -45,10 +65,9 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         this.agentMap = agentMap;
         this.orderId = orderId;
         this.orderStatus = OrderStatus.unassigned;
-        this.agentId = null;
+        this.agentId = -1;
         this.agentRef = null;
         this.item = null;
-        
 
         // http post request to restaurant service to place order
         try {
@@ -110,7 +129,8 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
                 conn.setRequestProperty("Accept", "application/json");
                 conn.setDoOutput(true);
 
-                String input = "{\"custId\": " + placeOrder.getCustId() + ", \"amount\": " + placeOrder.getQty() * item.getPrice() + "}";
+                String input = "{\"custId\": " + placeOrder.getCustId() + ", \"amount\": "
+                        + placeOrder.getQty() * item.getPrice() + "}";
 
                 // send request
                 conn.getOutputStream().write(input.getBytes());
@@ -133,9 +153,6 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         // placeOrder();
 
         getContext().getLog().info("Order created with order Id {}, order status {}", orderId, orderStatus);
-    }
-
-    interface Command {
     }
 
     public static class ActorStatus implements Command {
@@ -164,11 +181,9 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
      * }
      */
     public static class ActorStatusResponse {
-
     }
 
     public static class OrderDelivered implements Command {
-
     }
 
     public static Behavior<Command> create(PlaceOrder placeOrder, Integer orderId,
@@ -182,6 +197,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
                 .onMessage(ActorStatus.class, this::onActorStatus)
                 // .onMessage(AgentAssignConfirm.class, this::onAgentAssignConfirm)
                 .onMessage(OrderDelivered.class, this::onOrderDelivered)
+                .onMessage(GetOrderCmd.class, this::onGetOrderCmd)
                 .build();
     }
 
@@ -233,5 +249,11 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
 
             agentMap.get(id).tell(new Agent.AvailableRequest(orderId, getContext().getSelf()));
         }
+    }
+
+    private Behavior<Command> onGetOrderCmd(GetOrderCmd getOrderCmd) {
+        getContext().getLog().info("FulFillOrder : Sending order details with id {} to {}", orderId, getOrderCmd.replyTo);
+        getOrderCmd.replyTo.tell(new GetOrderResponse(new OrderPlaced(this.orderId, this.orderStatus, this.agentId)));
+        return Behaviors.same();
     }
 }

@@ -85,6 +85,19 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     /**
+     * this command is used for getting details of an order
+     */
+    public final static class GetOrderCmd implements Command {
+        public final int orderId;
+        public final ActorRef<FulFillOrder.GetOrderResponse> replyTo;
+
+        public GetOrderCmd(ActorRef<FulFillOrder.GetOrderResponse> replyTo, String orderId) {
+            this.orderId = Integer.parseInt(orderId);
+            this.replyTo = replyTo;
+        }
+    }
+
+    /**
      * this command is used to make order
      */
     public final static class RequestOrder implements Command {
@@ -143,6 +156,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
                 .onMessage(RequestOrder.class, this::onRequestOrder)
                 .onMessage(AgentSignInOutCommand.class, this::onAgentSignInOut)
                 .onMessage(GetAgentCmd.class, this::onGetAgent)
+                .onMessage(GetOrderCmd.class, this::onGetOrder)
                 .build();
     }
 
@@ -171,6 +185,16 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
 
     private Behavior<Command> onGetAgent(GetAgentCmd getAgentCmd) {
         agentMap.get(getAgentCmd.agentId).tell(new Agent.GetAgentCmd(getAgentCmd.replyTo));
+        return this;
+    }
+
+    private Behavior<Command> onGetOrder(GetOrderCmd getOrderCmd) {
+        if (orderMap.containsKey(getOrderCmd.orderId)) {
+            orderMap.get(getOrderCmd.orderId).tell(new FulFillOrder.GetOrderCmd(getOrderCmd.replyTo));
+        } else {
+            getContext().getLog().info("Order with Id {} not found", getOrderCmd.orderId);
+            getOrderCmd.replyTo.tell(new FulFillOrder.GetOrderResponse(null));
+        }
         return this;
     }
 }
