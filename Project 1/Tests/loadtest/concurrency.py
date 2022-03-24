@@ -5,6 +5,7 @@ from asyncio import futures
 import sys
 import random
 import threading
+from time import sleep
 
 sys.path.append('..')
 sys.path.append('../unittest')
@@ -176,6 +177,7 @@ if __name__ == '__main__':
         wallet.testReinitialize(1)
         restaurant.testReinitialize(2)
         delivery.testReinitialize(3)
+        sleep(1)
         futures = []
 
         for delAgent in [201, 202, 203]:
@@ -202,6 +204,7 @@ if __name__ == '__main__':
             wallet.testReinitialize(1)
             restaurant.testReinitialize(2)
             delivery.testReinitialize(3)
+            sleep(1)
             futures = []
 
             # random number of threads 1 - 50
@@ -222,7 +225,7 @@ if __name__ == '__main__':
     wallet.testReinitialize(1)
     restaurant.testReinitialize(2)
     delivery.testReinitialize(3)
-
+    sleep(1)
     delivery.testAgentSignIn(4, 201, 201)
     delivery.testAgentSignIn(5, 202, 201)
     delivery.testAgentSignIn(6, 203, 201)
@@ -273,7 +276,7 @@ if __name__ == '__main__':
     restaurant.testReinitialize(2)
     delivery.testReinitialize(3)
 
-
+    sleep(1)
     threads = []
 
     for i in range(50):

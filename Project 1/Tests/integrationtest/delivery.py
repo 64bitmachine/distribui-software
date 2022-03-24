@@ -123,6 +123,7 @@ test case for request order
 @param statuscode - expected http status code
 '''
 def testRequestOrder(t, custId, restId, itemId, qty, statuscode):
+    statuscode = 201
     print(str(t) + ".\tdelivery request\t- post /requestOrder\t\t", end="")
     try:
         response = requests.post(delivery_url + "/requestOrder", json={
@@ -163,6 +164,7 @@ test case for get order details
 '''
 def testGetOrder(t, orderId, status, agentId, statuscode):
     print(str(t) + ".\tdelivery request\t- get /order/" + str(orderId) + "\t\t", end="")
+    print("Desired : AgentId =",agentId, "OrderId = " , orderId, "Status=",status)
     try:
         response = requests.get(delivery_url + "/order/" + str(orderId))
         if status == "return":
