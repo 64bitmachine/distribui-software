@@ -1,6 +1,6 @@
 package com.example;
 
-import com.example.FulFillOrder.AgentAvailableStatus;
+import com.example.FulFillOrder.AgentIsAvailableCmd;
 import com.example.dto.DeliveryAgent;
 import com.example.dto.DeliveryAgentStatus;
 
@@ -17,8 +17,12 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
     private final DeliveryAgent agent;
     private Integer orderId;
 
+    //Parent Interface Command
     public interface AgentCommand {}
 
+    /**
+     * GetAgentResponse : Agent Actor sends this command to Controller
+     */
     public final static class GetAgentResponse {
         final DeliveryAgent agent;
 
@@ -26,7 +30,9 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
             this.agent = agent;
         }
     }
-
+    /**
+     * GetAgentCmd : Delivery Actor sends this command to Agent Actor to return GetAgentResponse to Controller
+     */
     public final static class GetAgentCmd implements AgentCommand {
         final ActorRef<GetAgentResponse> replyTo;
 
@@ -36,7 +42,8 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
     }
     
     /**
-     * this command is used to sign in and out the agent
+     * SignInOut : DeliveryActor sends this command to Agent Actor
+     * is used to sign in and out the agent
      * isSignIn is true if agent is signing in
      * isSignIn is false if agent is signing out
      */
@@ -48,8 +55,15 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
         }
     }
 
-    public static final class SignInOutResponse implements AgentCommand {}
+    /**
+     * SignInOutResponse : Agent Actor sends this command to Delivery Actor
+     */
+    //public static final class SignInOutResponse {}
 
+    /**
+     * AvailableRequest : FulFillOrder send this to Agent Actor to check if the agent is available 
+     * and if agent is avialble , sends FulFillOrder.AgentIsAvailableCmd to fulfillOrder actor
+     */
     public static final class AvailableRequest implements AgentCommand {
         final Integer orderId;
         final ActorRef<FulFillOrder.Command> replyTo;
@@ -60,8 +74,13 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
         }
     }
 
-    public static final class AvailableResponse implements AgentCommand {}
+    //public static final class AvailableResponse implements AgentCommand {}
 
+    /**
+     * ConfirmationRequest : FulFillOrder send this to Agent Actor to confirm with the agent that 
+     * he is assigned to that particular FulFillOrder.
+     * @args : isConfirmed : true if agent is confirmed to fulfill the order
+     */
     public static final class ConfirmationRequest implements AgentCommand {
         final boolean isConfirmed;
         final Integer orderId;
@@ -107,12 +126,12 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
             getContext().getLog().info("Sending AgentAvailableStatus from {} to FulFillOrder for order Id {}", agent.getAgentId(), orderId);
             orderId = request.orderId;
             agent.setStatus(DeliveryAgentStatus.unavailable);
-            request.replyTo.tell(new AgentAvailableStatus(getContext().getSelf(), agent));
+            request.replyTo.tell(new AgentIsAvailableCmd(getContext().getSelf(), agent));
         }
         else {
             // agent is unavailable
             getContext().getLog().info("Agent with Id {} is not available",agent.getAgentId());
-            request.replyTo.tell(new AgentAvailableStatus(getContext().getSelf(), null));
+            request.replyTo.tell(new AgentIsAvailableCmd(getContext().getSelf(), null));
         }
         return Behaviors.same();
     }
@@ -121,6 +140,9 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
         /**If agent is not assigned to desired orderId then set the agent back
          * available.
         */
+        System.out.println("reQUEST"+request);
+        System.out.println(request.orderId);
+        System.out.println(request.isConfirmed);
         if(!request.isConfirmed && orderId.equals(request.orderId)) {
             getContext().getLog().info("Agent : Making Agent with agentId {} avialable as order Id {} is already assigned",agent.getAgentId(), orderId);
             agent.setStatus(DeliveryAgentStatus.available);

@@ -5,6 +5,7 @@ import java.util.TreeMap;
 
 import com.example.Agent.AgentCommand;
 import com.example.DBInit.ReadDB;
+import com.example.FulFillOrder.AgentIsAvailableCmd;
 import com.example.dto.DeliveryAgent;
 import com.example.dto.PlaceOrder;
 
@@ -28,7 +29,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     private TreeMap<Integer, TrackOrder> orderMap;
     private Integer orderId;
 
-    // actor protocol
+    // Parent Command Interface
     interface Command {
     }
 
@@ -36,12 +37,11 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         super(context);
         orderId = 1000;
         log.info("Delivery Actor created");
-        // TODO ReadData from the InitData.txt file
+       
         ReadDB readfile = new ReadDB();
         List<DeliveryAgent> deliveryAgents = readfile.readDeliveryAgentIDFromFile();
         agentMap = new TreeMap<>();
         orderMap = new TreeMap<>();
-        // TODO Create as many agents as specified in above file and Put entry in
         // agentMap
         for (DeliveryAgent agent : deliveryAgents) {
             ActorRef<Agent.AgentCommand> agentRef = context.spawn(
@@ -56,6 +56,10 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         }
     }
 
+    /**
+     * AgentAssigned : FullfillOrder Actor sends this command to Delivery Actor
+     * when it has been assigned an agent 
+    */
     public final static class AgentAssigned implements Command {
         public final Integer orderId;
 
@@ -64,6 +68,10 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         }
     }
 
+    /**
+     * AgentSignInOutCommand : External Controller send this comand to sign in and sign out an agent.
+     * @args isSignIn : true for sign in and false for sign out
+     */
     public final static class AgentSignInOutCommand implements Command {
         public final int agentId;
         public final ActorRef<AgentSignInOutResponse> replyTo;
@@ -76,11 +84,9 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         }
     }
 
-    public final static class AgentSignInOutResponse implements Command {
-        public AgentSignInOutResponse() {
-        }
-    }
-
+    /**
+     * GetAgentCmd : Controller sends this command to Delivery Actor to get the appropriate agent
+     */
     public final static class GetAgentCmd implements Command {
         public final int agentId;
         public final ActorRef<Agent.GetAgentResponse> replyTo;
@@ -92,7 +98,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     /**
-     * this command is used for getting details of an order
+     * GetOrderCmd : Controller sends this command to Delivery Actor to get details of the appropriate order
      */
     public final static class GetOrderCmd implements Command {
         public final int orderId;
@@ -105,7 +111,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     /**
-     * this command is used to make order
+     * RequestOrder : Controller sends this command to Delivery Actor to place an order
      */
     public final static class RequestOrder implements Command {
         public final ActorRef<RequestOrderResponse> replyTo;
@@ -117,6 +123,9 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         }
     }
 
+    /**
+     * RequestOrderResponse : Response to controller by Delivery Actor after receiving RequestOrder
+     */
     public final static class RequestOrderResponse {
         public final Integer orderId;
 
@@ -125,6 +134,9 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         }
     }
 
+    /**
+     * ReInitialize : Controller sends this command to Delivery Actor to re-initialize the system
+     */
     public final static class ReInitialize implements Command {
         public final ActorRef<ReInitializeResponse> replyTo;
 
@@ -133,14 +145,26 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         }
     }
 
-    public final static class ActionPerformed implements Command {
+    /** 
+     * ActionPerformed : Yet to be implemented
+     */
+   /*  public final static class ActionPerformed implements Command {
         public final String description;
 
         public ActionPerformed(String description) {
             this.description = description;
         }
+    } */
+
+    /**
+     * AgentSignInOutResponse : Response to controller by Delivery Actor after receiving AgentSignInOutCommand
+     */
+    public final static class AgentSignInOutResponse{
+        public AgentSignInOutResponse() {
+        }
     }
 
+    
     public static Behavior<Command> create() {
         return Behaviors.setup(Delivery::new);
     }
@@ -178,9 +202,9 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         agentMap.get(agentSignInCmd.agentId).tell(new Agent.SignInOut(agentSignInCmd.isSignIn));
         agentSignInCmd.replyTo.tell(new AgentSignInOutResponse());
         TrackOrder waitingOrder = getWaitingOrder();
-        if (waitingOrder != null) {
-            waitingOrder.getOrderRef().tell(new AssignThisAgent());
-        }
+        // if (waitingOrder != null) {
+        //     waitingOrder.getOrderRef().tell(new AgentIsAvailableCmd());
+        // }
         return Behaviors.same();
     }
 
@@ -201,7 +225,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
      */
     private Behavior<Command> onRequestOrder(RequestOrder reqOrder) {
         ActorRef<FulFillOrder.Command> orderActor = getContext().spawn(
-                FulFillOrder.create(reqOrder.placeOrder, orderId, agentMap),
+                FulFillOrder.create(reqOrder.placeOrder, orderId, agentMap , getContext().getSelf()),
                 "Order-" + orderId);
         orderMap.put(orderId, new TrackOrder(orderActor, false));
         reqOrder.replyTo.tell(new RequestOrderResponse(orderId));

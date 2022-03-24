@@ -26,6 +26,7 @@ import akka.actor.typed.javadsl.Receive;
 
 public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     private Map<Integer, ActorRef<AgentCommand>> agentMap;
+    private ActorRef<Delivery.Command> deliveryRef;
     private PlaceOrder placeOrder;
     private Integer orderId;
     private String orderStatus;
@@ -39,9 +40,13 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     public static final String RESTAURANT_SERVICE = ConfigFactory.load().getConfig("my-app.restaurant-server")
             .getString("address");
 
+    // parent Command Interface
     interface Command {
     }
 
+    /**
+     * GetOrderResponse : FullfillOrder Actor sends this command to Controller
+     */
     public final static class GetOrderResponse {
         final OrderPlaced order;
 
@@ -50,6 +55,9 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         }
     }
 
+    /**
+     * GetOrderCmd : Delivery Actor sends this command to FullfillOrder Actor to return the order to controller.
+     */
     public final static class GetOrderCmd implements Command {
         final ActorRef<GetOrderResponse> replyTo;
 
@@ -58,8 +66,34 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         }
     }
 
+    /**
+     * AgentIsAvailableCmd : Agent Actor sends this to Fulfillorder if it is avialable.
+     */
+    public final static class AgentIsAvailableCmd implements Command {
+        private final ActorRef<Agent.AgentCommand> agentReplyTo;
+        private final DeliveryAgent agent;
+
+        AgentIsAvailableCmd(ActorRef<Agent.AgentCommand> agentReplyTo, DeliveryAgent agent) {
+            this.agentReplyTo = agentReplyTo;
+            this.agent = agent;
+        }
+    }
+
+    /**
+     * ActorStatusResponse : To be implemented
+     */ 
+    public static class ActorStatusResponse {
+    }
+
+    /**
+     * OrderDelivered : To be implemented
+     */
+    public static class OrderDelivered implements Command {
+    }
+
+
     public FulFillOrder(ActorContext<Command> context, PlaceOrder placeOrder,
-            Integer orderId, Map<Integer, ActorRef<AgentCommand>> agentMap) {
+            Integer orderId, Map<Integer, ActorRef<AgentCommand>> agentMap , ActorRef<Delivery.Command> deliveryRef) {
 
         super(context);
         getContext().getLog().info("Creating Order with order Id {}", orderId);
@@ -72,6 +106,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         this.agentRef = null;
         this.item = null;
         this.agentReqList = new ArrayList<>();
+        this.deliveryRef = deliveryRef;
 
         // http post request to restaurant service to place order
         try {
@@ -127,6 +162,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
                 URL url = new URL(WALLET_SERVICE + "/deductBalance");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
+                
                 // post request
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json");
@@ -160,15 +196,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         getContext().getLog().info("Order created with order Id {}, order status {}", orderId, orderStatus);
     }
 
-    public final static class AgentAvailableStatus implements Command {
-        private final ActorRef<Agent.AgentCommand> agentReplyTo;
-        private final DeliveryAgent agent;
-
-        AgentAvailableStatus(ActorRef<Agent.AgentCommand> agentReplyTo, DeliveryAgent agent) {
-            this.agentReplyTo = agentReplyTo;
-            this.agent = agent;
-        }
-    }
+    
 
     /**
      * public static class AgentAssignConfirm implements Command
@@ -184,27 +212,22 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
      * }
      * }
      */
-    public static class ActorStatusResponse {
-    }
-
-    public static class OrderDelivered implements Command {
-    }
-
+    
     public static Behavior<Command> create(PlaceOrder placeOrder, Integer orderId,
-            Map<Integer, ActorRef<AgentCommand>> agentMap) {
-        return Behaviors.setup(context -> new FulFillOrder(context, placeOrder, orderId, agentMap));
+            Map<Integer, ActorRef<AgentCommand>> agentMap, ActorRef<Delivery.Command> deliveryRef) {
+        return Behaviors.setup(context -> new FulFillOrder(context, placeOrder, orderId, agentMap ,deliveryRef));
     }
 
     @Override
     public Receive<Command> createReceive() {
         return newReceiveBuilder()
-                .onMessage(AgentAvailableStatus.class, this::onAgentAvailableStatus)
+                .onMessage(AgentIsAvailableCmd.class, this::onAgentIsAvailableCmd)
                 .onMessage(OrderDelivered.class, this::onOrderDelivered)
                 .onMessage(GetOrderCmd.class, this::onGetOrderCmd)
                 .build();
     }
 
-    private Behavior<Command> onAgentAvailableStatus(AgentAvailableStatus agentAvailableStatus) {
+    private Behavior<Command> onAgentIsAvailableCmd(AgentIsAvailableCmd agentAvailableStatus) {
         
         if (agentAvailableStatus.agent != null) {
             if (orderStatus.equals(OrderStatus.unassigned)) {
@@ -215,10 +238,14 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
                 this.agentRef = agentAvailableStatus.agentReplyTo;
                 this.agentReqList.clear();
                 this.orderStatus = OrderStatus.assigned;
+
+                // Informing Delivery Actor that order has been assigned to an agent
+                deliveryRef.tell(new Delivery.AgentAssigned(orderId));
                 // intimidate agent assigned to Delivery Actor
             }    
         } else {
             // previously requested agent is not available, so request for another agent
+            // agentAvailableStatus.agentReplyTo.tell(new Agent.ConfirmationRequest(orderId, false, getContext().getSelf()));
             probeAgents();
         }
         return Behaviors.same();
@@ -239,7 +266,6 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         // TODO Implement OrderDelivered
         return null;
     }
-
 
     private void probeAgents() {
         getContext().getLog().info("FulFillOrder : Probing agents for order Id {}", orderId);
