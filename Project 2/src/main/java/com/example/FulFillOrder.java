@@ -80,6 +80,18 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     }
 
     /**
+     * AssignAgent : Delivery Actor sends this command to FullfillOrder Actor to assign the agent to the order.
+     */
+    public final static class AssignAgent implements Command{
+        //private final ActorRef<Agent.AgentCommand> agentReplyTo;
+        private final Integer agentId;
+
+        AssignAgent(Integer agentId) {
+            // this.agentReplyTo = agentReplyTo;
+            this.agentId = agentId;
+        }
+    }
+    /**
      * ActorStatusResponse : To be implemented
      */ 
     public static class ActorStatusResponse {
@@ -224,9 +236,15 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
                 .onMessage(AgentIsAvailableCmd.class, this::onAgentIsAvailableCmd)
                 .onMessage(OrderDelivered.class, this::onOrderDelivered)
                 .onMessage(GetOrderCmd.class, this::onGetOrderCmd)
+                .onMessage(AssignAgent.class, this::onAssignAgent)
                 .build();
     }
 
+    private Behavior<Command> onAssignAgent(AssignAgent assignAgent) {
+        agentReqList.remove(assignAgent.agentId);
+        probeAgents();
+        return Behaviors.same();
+    }
     private Behavior<Command> onAgentIsAvailableCmd(AgentIsAvailableCmd agentAvailableStatus) {
         
         if (agentAvailableStatus.agent != null) {
