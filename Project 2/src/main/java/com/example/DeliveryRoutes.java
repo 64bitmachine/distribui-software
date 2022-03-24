@@ -85,10 +85,10 @@ public class DeliveryRoutes {
 				scheduler);
 	}
 
-	private CompletionStage<Delivery.ReInitializeResponse> orderDelivered(OrderDelivered orderDelivered) {
+	private CompletionStage<Delivery.GetOrderDeliveredResp> orderDelivered(OrderDelivered orderDelivered) {
 		log.info("serving orderDelivered request");
 		log.info("orderDelivered: " + orderDelivered);
-		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
+		return AskPattern.ask(deliveryActor, ref -> new Delivery.OrderDeliveredCmd(ref,orderDelivered), askTimeout, scheduler);
 	}
 
 	private CompletionStage<FulFillOrder.GetOrderResponse> getOrder(String num) {
@@ -191,7 +191,7 @@ public class DeliveryRoutes {
 			pathEnd(() -> concat(
 					post(() -> entity(
 							Jackson.unmarshaller(OrderDelivered.class),
-							order -> onSuccess(orderDelivered(order), (t) -> complete(StatusCodes.OK)))))));
+							order -> onSuccess(orderDelivered(order), (t) -> complete(StatusCodes.CREATED)))))));
 
 	/**
 	 * request - post /agentSignOut
@@ -215,7 +215,8 @@ public class DeliveryRoutes {
 					post(() -> entity(
 							Jackson.unmarshaller(PlaceOrder.class),
 							requestOrder -> onSuccess(requestOrder(requestOrder),
-									(t) -> complete(StatusCodes.CREATED)))))));
+									(placeOrder) -> placeOrder ==null? complete(StatusCodes.GONE)
+									: complete(StatusCodes.CREATED,placeOrder,Jackson.marshaller())))))));
 
 	/**
 	 * Route : /reInitialize post

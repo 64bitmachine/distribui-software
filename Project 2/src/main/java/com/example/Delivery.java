@@ -6,12 +6,16 @@ import java.util.TreeMap;
 import com.example.Agent.AgentCommand;
 import com.example.DBInit.ReadDB;
 import com.example.FulFillOrder.AgentIsAvailableCmd;
+import com.example.FulFillOrder.AssignAgent;
 import com.example.dto.DeliveryAgent;
+import com.example.dto.OrderDelivered;
+import com.example.dto.OrderPlaced;
 import com.example.dto.PlaceOrder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import akka.actor.CoordinatedShutdownTerminationWatcher.Watch;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractBehavior;
@@ -37,7 +41,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         super(context);
         orderId = 1000;
         log.info("Delivery Actor created");
-       
+
         ReadDB readfile = new ReadDB();
         List<DeliveryAgent> deliveryAgents = readfile.readDeliveryAgentIDFromFile();
         agentMap = new TreeMap<>();
@@ -45,7 +49,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         // agentMap
         for (DeliveryAgent agent : deliveryAgents) {
             ActorRef<Agent.AgentCommand> agentRef = context.spawn(
-                    Agent.create(agent.getAgentId(), agent.getStatus()), "agent-" + agent.getAgentId());
+                    Agent.create(getContext().getSelf(), agent.getAgentId(), agent.getStatus()),
+                    "agent-" + agent.getAgentId());
             agentMap.put(agent.getAgentId(), agentRef);
         }
     }
@@ -58,8 +63,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
 
     /**
      * AgentAssigned : FullfillOrder Actor sends this command to Delivery Actor
-     * when it has been assigned an agent 
-    */
+     * when it has been assigned an agent
+     */
     public final static class AgentAssigned implements Command {
         public final Integer orderId;
 
@@ -69,7 +74,9 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     /**
-     * AgentSignInOutCommand : External Controller send this comand to sign in and sign out an agent.
+     * AgentSignInOutCommand : External Controller send this comand to sign in and
+     * sign out an agent.
+     * 
      * @args isSignIn : true for sign in and false for sign out
      */
     public final static class AgentSignInOutCommand implements Command {
@@ -85,7 +92,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     /**
-     * GetAgentCmd : Controller sends this command to Delivery Actor to get the appropriate agent
+     * GetAgentCmd : Controller sends this command to Delivery Actor to get the
+     * appropriate agent
      */
     public final static class GetAgentCmd implements Command {
         public final int agentId;
@@ -98,7 +106,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     /**
-     * GetOrderCmd : Controller sends this command to Delivery Actor to get details of the appropriate order
+     * GetOrderCmd : Controller sends this command to Delivery Actor to get details
+     * of the appropriate order
      */
     public final static class GetOrderCmd implements Command {
         public final int orderId;
@@ -111,7 +120,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     /**
-     * RequestOrder : Controller sends this command to Delivery Actor to place an order
+     * RequestOrder : Controller sends this command to Delivery Actor to place an
+     * order
      */
     public final static class RequestOrder implements Command {
         public final ActorRef<RequestOrderResponse> replyTo;
@@ -124,7 +134,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     /**
-     * RequestOrderResponse : Response to controller by Delivery Actor after receiving RequestOrder
+     * RequestOrderResponse : Response to controller by Delivery Actor after
+     * receiving RequestOrder
      */
     public final static class RequestOrderResponse {
         public final Integer orderId;
@@ -135,7 +146,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     /**
-     * ReInitialize : Controller sends this command to Delivery Actor to re-initialize the system
+     * ReInitialize : Controller sends this command to Delivery Actor to
+     * re-initialize the system
      */
     public final static class ReInitialize implements Command {
         public final ActorRef<ReInitializeResponse> replyTo;
@@ -145,26 +157,82 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         }
     }
 
-    /** 
-     * ActionPerformed : Yet to be implemented
+    /**
+     * OrderDeliveredCmd : Controller sends this command to Deliver Actor to inform
+     * it about Delivered Order
      */
-   /*  public final static class ActionPerformed implements Command {
-        public final String description;
+    public final static class OrderDeliveredCmd implements Command {
+        public final OrderDelivered order;
+        public final ActorRef<GetOrderDeliveredResp> replyTo;
 
-        public ActionPerformed(String description) {
-            this.description = description;
+        public OrderDeliveredCmd(ActorRef<GetOrderDeliveredResp> replyTo, OrderDelivered order) {
+            this.replyTo = replyTo;
+            this.order = order;
         }
-    } */
+    }
 
     /**
-     * AgentSignInOutResponse : Response to controller by Delivery Actor after receiving AgentSignInOutCommand
+     * DestroyFulFillOrder : FulFillOrder Send this to Delivery to destroy it once
+     * the order is delivered.
      */
-    public final static class AgentSignInOutResponse{
+    public final static class DestroyFulFillOrder implements Command {
+        public final Integer orderId;
+        public final ActorRef<FulFillOrder.Command> orderRef;
+
+        public DestroyFulFillOrder(Integer orderId, ActorRef<FulFillOrder.Command> orderRef) {
+            this.orderId = orderId;
+            this.orderRef = orderRef;
+        }
+    }
+
+    /**
+     * AgentIsFree : Agent Actor send this to Delivery on getting freed from the
+     * assigned order upon its delivery
+     */
+    public final static class AgentIsFree implements Command {
+        public final Integer agentId;
+        public final ActorRef<Agent.AgentCommand> agentRef;
+
+        public AgentIsFree(Integer agentId, ActorRef<Agent.AgentCommand> agentRef) {
+            this.agentId = agentId;
+            this.agentRef = agentRef;
+        }
+    }
+
+    /**
+     * GetOrderDeliveredResp : Delivery Actor sends this command to Controller as a
+     * reply to OrderDelivered Endpoint Request
+     */
+
+    public final static class GetOrderDeliveredResp {
+        final Integer orderId;
+
+        public GetOrderDeliveredResp(Integer orderId) {
+            this.orderId = orderId;
+        }
+    }
+    /**
+     * ActionPerformed : Yet to be implemented
+     */
+    /*
+     * public final static class ActionPerformed implements Command {
+     * public final String description;
+     * 
+     * public ActionPerformed(String description) {
+     * this.description = description;
+     * }
+     * }
+     */
+
+    /**
+     * AgentSignInOutResponse : Response to controller by Delivery Actor after
+     * receiving AgentSignInOutCommand
+     */
+    public final static class AgentSignInOutResponse {
         public AgentSignInOutResponse() {
         }
     }
 
-    
     public static Behavior<Command> create() {
         return Behaviors.setup(Delivery::new);
     }
@@ -189,7 +257,38 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
                 .onMessage(GetAgentCmd.class, this::onGetAgent)
                 .onMessage(GetOrderCmd.class, this::onGetOrder)
                 .onMessage(AgentAssigned.class, this::onAgentAssigned)
+                .onMessage(OrderDeliveredCmd.class, this::onOrderDeliveredCmd)
+                .onMessage(AgentIsFree.class, this::onAgentIsFree)
+                .onMessage(DestroyFulFillOrder.class, this::onDestroyFulFillOrder)
                 .build();
+    }
+
+    private Behavior<Command> onAgentIsFree(AgentIsFree agentIsFree) {
+        if (agentIsFree.agentRef.toString().equals(agentMap.get(agentIsFree.agentId).toString())) {
+            TrackOrder waitingOrder = getWaitingOrder();
+            if (waitingOrder != null) {
+                log.debug("DeliveryAgent : Agent {} is Free", agentIsFree.agentId);
+                waitingOrder.getOrderRef().tell(new FulFillOrder.AssignAgent(agentIsFree.agentId));
+            }
+        }
+        return Behaviors.same();
+    }
+
+    private Behavior<Command> onDestroyFulFillOrder(DestroyFulFillOrder destroy) {
+        return Behaviors.same();
+    }
+
+    private Behavior<Command> onOrderDeliveredCmd(OrderDeliveredCmd orderDeliveredCmd) {
+        Integer deliveredOrderId = orderDeliveredCmd.order.getOrderId();
+
+        log.info("Delivery: Sending OrderIsDelivered to FulFillOrder for orderId {}", deliveredOrderId);
+        // log.info("Delivery : Order is assigned {}",
+        // orderMap.get(deliveredOrderId).getIsAgentAssigned());
+        if (orderMap.get(deliveredOrderId).getIsAgentAssigned() && orderMap.containsKey(deliveredOrderId))
+            orderMap.get(deliveredOrderId).getOrderRef().tell(new FulFillOrder.OrderIsDelivered());
+
+        orderDeliveredCmd.replyTo.tell(new GetOrderDeliveredResp(orderDeliveredCmd.order.getOrderId()));
+        return Behaviors.same();
     }
 
     private Behavior<Command> onAgentAssigned(AgentAssigned agentAssigned) {
@@ -202,17 +301,21 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         agentMap.get(agentSignInCmd.agentId).tell(new Agent.SignInOut(agentSignInCmd.isSignIn));
         agentSignInCmd.replyTo.tell(new AgentSignInOutResponse());
         TrackOrder waitingOrder = getWaitingOrder();
-        // if (waitingOrder != null) {
-        //     waitingOrder.getOrderRef().tell(new AgentIsAvailableCmd());
-        // }
+
+        if (waitingOrder != null) {
+            log.debug("DeliveryAgent : Agent {} is Available", agentSignInCmd.agentId);
+            waitingOrder.getOrderRef().tell(new FulFillOrder.AssignAgent(agentSignInCmd.agentId));
+        }
         return Behaviors.same();
     }
 
     private TrackOrder getWaitingOrder() {
         for (Integer orderId : orderMap.keySet()) {
             TrackOrder order = orderMap.get(orderId);
-            if (order.getIsAgentAssigned() == false)
+            // System.out.println("############" + orderId);
+            if (order.getIsAgentAssigned() == false) {
                 return order;
+            }
         }
         return null;
     }
@@ -225,7 +328,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
      */
     private Behavior<Command> onRequestOrder(RequestOrder reqOrder) {
         ActorRef<FulFillOrder.Command> orderActor = getContext().spawn(
-                FulFillOrder.create(reqOrder.placeOrder, orderId, agentMap , getContext().getSelf()),
+                FulFillOrder.create(reqOrder.placeOrder, orderId, agentMap, getContext().getSelf()),
                 "Order-" + orderId);
         orderMap.put(orderId, new TrackOrder(orderActor, false));
         reqOrder.replyTo.tell(new RequestOrderResponse(orderId));

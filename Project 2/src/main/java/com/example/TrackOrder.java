@@ -7,12 +7,13 @@ public class TrackOrder {
      * Track Order status and reference of the FulFillOrder Actor
      * 
      * @arg orderRef - ActorRef of FulFillOrder Actor
-     * @arg agentAssigned - Boolean variable which will be true is agent is assigned else false.
+     * @arg agentAssigned - Boolean variable which will be true is agent is assigned
+     *      else false.
      */
     private ActorRef<FulFillOrder.Command> orderRef;
     private boolean isAgentAssigned;
-    public TrackOrder(ActorRef<FulFillOrder.Command> orderRef, boolean isAgentAssigned)
-    {
+
+    public TrackOrder(ActorRef<FulFillOrder.Command> orderRef, boolean isAgentAssigned) {
         this.orderRef = orderRef;
         this.isAgentAssigned = isAgentAssigned;
     }
@@ -25,11 +26,11 @@ public class TrackOrder {
         this.orderRef = orderRef;
     }
 
-    public Boolean getIsAgentAssigned() {
+    public boolean getIsAgentAssigned() {
         return this.isAgentAssigned;
     }
 
-    public void setIsAgentAssigned(Boolean agentAssigned) {
+    public void setIsAgentAssigned(boolean agentAssigned) {
         this.isAgentAssigned = agentAssigned;
     }
 
