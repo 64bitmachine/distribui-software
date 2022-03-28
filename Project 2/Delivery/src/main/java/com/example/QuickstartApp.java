@@ -39,7 +39,7 @@ public class QuickstartApp {
 
             // spawning one instance of Delivery actor upfront before receiving any http requests
             ActorRef<Delivery.Command> deliveryActor =
-                context.spawn(Delivery.create(), "DeliveryService");
+                context.spawn(Delivery.create(args[0]), "DeliveryService");
 
             DeliveryRoutes deliveryRoutes = new DeliveryRoutes(context.getSystem(), deliveryActor);
             startHttpServer(deliveryRoutes.deliveryRoutes(), context.getSystem());

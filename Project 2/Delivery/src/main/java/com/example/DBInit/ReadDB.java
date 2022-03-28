@@ -17,8 +17,8 @@ public class ReadDB {
 
     private final String DB_FILE;
 
-    public ReadDB() {
-        DB_FILE = "initialData.txt";
+    public ReadDB(String path) {
+        DB_FILE = path;
     }
 
     public ArrayList<DeliveryAgent> readDeliveryAgentIDFromFile() {
@@ -28,8 +28,7 @@ public class ReadDB {
             String line;
             
             // read the file from resources
-            ClassLoader classLoader = getClass().getClassLoader();
-            File file = new File(classLoader.getResource(DB_FILE).toURI());
+            File file = new File(DB_FILE);
             BufferedReader br = new BufferedReader(new FileReader(file));
 
             int starCount = 0;

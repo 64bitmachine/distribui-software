@@ -29,13 +29,13 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     public interface Command {
     }
 
-    public Delivery(ActorContext<Command> context) {
+    public Delivery(ActorContext<Command> context,String path) {
         super(context);
         orderId = 1000;
         // getContext().getLog().info("Delivery Actor created");
 
         // reading the database
-        ReadDB readfile = new ReadDB();
+        ReadDB readfile = new ReadDB(path);
         List<DeliveryAgent> deliveryAgents = readfile.readDeliveryAgentIDFromFile();
         agentMap = new TreeMap<>();
         orderMap = new TreeMap<>();
@@ -225,8 +225,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         }
     }
 
-    public static Behavior<Command> create() {
-        return Behaviors.setup(Delivery::new);
+    public static Behavior<Command> create(String path) {
+        return Behaviors.setup(context -> new Delivery(context,path));
     }
 
     private Behavior<Command> onReInitialize(ReInitialize command) {
