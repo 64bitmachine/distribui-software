@@ -59,7 +59,7 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
             this.isSignIn = isSignIn;
         }
     }
-
+    public static final class Reset implements AgentCommand {}
     /**
      * SignInOutResponse : Agent Actor sends this command to Delivery Actor
      */
@@ -115,7 +115,7 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
     public Agent(ActorContext<AgentCommand> context, ActorRef<Delivery.Command> deliveryRef, Integer agentId,
             String agentStatus) {
         super(context);
-        getContext().getLog().info("Created Delivery Agent with Id - {}", agentId);
+        // getContext().getLog().info("Created Delivery Agent with Id - {}", agentId);
         this.deliveryRef = deliveryRef;
         agent = new DeliveryAgent(agentId, agentStatus);
         orderId = null;
@@ -129,14 +129,19 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
                 .onMessage(SignInOut.class, this::onSignInOut)
                 .onMessage(GetAgentCmd.class, this::onGetAgent)
                 .onMessage(Free.class, this::onFree)
+                .onMessage(Reset.class, this::onReset)
                 .build();
     }
 
+    private Behavior<AgentCommand> onReset(Reset reset)
+    {
+        agent.setStatus(DeliveryAgentStatus.signed_out);
+        orderId = null;
+        return Behaviors.same();
+    }
     private Behavior<AgentCommand> onFree(Free free) {
 
-        getContext().getLog().info("Agent with agent id {} having orderId {} is free from orderId {} ",
-                agent.getAgentId(),
-                orderId, free.orderId);
+        // getContext().getLog().info("Agent with agent id {} having orderId {} is free from orderId {} ",agent.getAgentId(),orderId, free.orderId);
 
         if (orderId != null && orderId.equals(free.orderId)) {
             agent.setStatus(DeliveryAgentStatus.available);
@@ -150,11 +155,11 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
     private Behavior<AgentCommand> onSignInOut(SignInOut signIn) {
         if (signIn.isSignIn) {
             agent.setStatus(DeliveryAgentStatus.available);
-            getContext().getLog().info("Agent with Id {} has signed in", agent.getAgentId());
+            // getContext().getLog().info("Agent with Id {} has signed in", agent.getAgentId());
         } else {
             if (this.agent.getStatus().equals(DeliveryAgentStatus.available)) {
                 agent.setStatus(DeliveryAgentStatus.signed_out);
-                getContext().getLog().info("Agent with Id {} has signed out", agent.getAgentId());
+                // getContext().getLog().info("Agent with Id {} has signed out", agent.getAgentId());
             }
         }
         return Behaviors.same();
@@ -163,14 +168,14 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
     private Behavior<AgentCommand> onAvailableRequest(AvailableRequest request) {
 
         if (agent.getStatus().equals(DeliveryAgentStatus.available)) {
-            getContext().getLog().info("Sending AgentAvailableStatus from {} to FulFillOrder for order Id {}",
-                    agent.getAgentId(), orderId);
+            // getContext().getLog().info("Sending AgentAvailableStatus from {} to FulFillOrder for order Id {}",
+                   //agent.getAgentId(), orderId);
             orderId = request.orderId;
             agent.setStatus(DeliveryAgentStatus.unavailable);
             request.replyTo.tell(new AgentIsAvailableCmd(getContext().getSelf(), agent));
         } else {
             // agent is unavailable
-            getContext().getLog().info("Agent with Id {} is not available", agent.getAgentId());
+            // getContext().getLog().info("Agent with Id {} is not available", agent.getAgentId());
             request.replyTo.tell(new AgentIsAvailableCmd(getContext().getSelf(), null));
         }
         return Behaviors.same();
@@ -181,13 +186,11 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
          * If agent is not assigned to desired orderId then set the agent back
          * available.
          */
-        System.out.println("reQUEST" + request);
-        System.out.println(request.orderId);
-        System.out.println(request.isConfirmed);
+
         if (!request.isConfirmed && orderId.equals(request.orderId)) {
-            getContext().getLog().info(
-                    "Agent : Making Agent with agentId {} avialable as order Id {} is already assigned",
-                    agent.getAgentId(), orderId);
+            // getContext().getLog().info(
+            //        "Agent : Making Agent with agentId {} avialable as order Id {} is already assigned",
+            //        agent.getAgentId(), orderId);
             agent.setStatus(DeliveryAgentStatus.available);
             orderId = null;
         }
@@ -195,7 +198,7 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
     }
 
     private Behavior<AgentCommand> onGetAgent(GetAgentCmd getAgentCmd) {
-        getContext().getLog().info("Sending Agent with Id - {}", agent.getAgentId());
+        // getContext().getLog().info("Sending Agent with Id - {}", agent.getAgentId());
         getAgentCmd.replyTo.tell(new GetAgentResponse(agent));
         return Behaviors.same();
     }

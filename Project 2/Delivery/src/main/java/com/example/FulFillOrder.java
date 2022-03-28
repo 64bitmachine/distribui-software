@@ -116,7 +116,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
             Integer orderId, Map<Integer, ActorRef<AgentCommand>> agentMap, ActorRef<Delivery.Command> deliveryRef) {
 
         super(context);
-        getContext().getLog().info("Creating Order with order Id {}", orderId);
+        // getContext().getLog().info("Creating Order with order Id {}", orderId);
 
         this.placeOrder = placeOrder;
         this.agentMap = agentMap;
@@ -170,9 +170,9 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
 
                 this.item = new Item(Integer.parseInt(restId[1].trim()), Integer.parseInt(itemId[1].trim()),
                         Integer.parseInt(qtyTokens[0].trim()));
-                getContext().getLog().info("restaurant service response: {}", response.toString());
+                // getContext().getLog().info("restaurant service response: {}", response.toString());
             } else {
-                getContext().getLog().info("Order not placed");
+                // getContext().getLog().info("Order not placed");
             }
         } catch (MalformedURLException e) {
             e.printStackTrace();
@@ -201,13 +201,13 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
 
                 // get response code and response json object
                 if (conn.getResponseCode() == 201) {
-                    getContext().getLog().info("Order placed");
+                    // getContext().getLog().info("Order placed");
 
                     // contacting delivery agents
                     probeAgents();
                 } else {
 
-                    getContext().getLog().info("Order not placed");
+                    // getContext().getLog().info("Order not placed");
                     
                     // revert the previous transaction on the restaurant service
                     try {
@@ -231,7 +231,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
 
                         // get response code and response json object
                         if (conn.getResponseCode() == 201) {
-                            getContext().getLog().info("order items restored");
+                            // getContext().getLog().info("order items restored");
                         }
                     } catch (MalformedURLException e) {
                         e.printStackTrace();
@@ -246,7 +246,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
             }
         }
 
-        getContext().getLog().info("Order created with order Id {}, order status {}", orderId, orderStatus);
+        // getContext().getLog().info("Order created with order Id {}, order status {}", orderId, orderStatus);
     }
 
     /**
@@ -282,9 +282,8 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
 
     private Behavior<Command> onOrderIsDelivered(OrderIsDelivered deliveredOrder) {
 
-        getContext().getLog().info("FulFillOrder : Freeing Agent with {} with agentRef{} on delivered order orderId {}",
-                agentId,
-                agentRef, orderId);
+        // getContext().getLog().info("FulFillOrder : Freeing Agent with {} with agentRef{} on delivered order orderId {}",
+        //        agentId,agentRef, orderId);
                 
         orderStatus = OrderStatus.delivered;
         // notify the agent that they are free
@@ -294,8 +293,8 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     }
 
     private Behavior<Command> onAssignAgent(AssignAgent assignAgent) {
-        getContext().getLog().info("FulFillOrder: Trying Assigning the agent {} for order {} on delivery'suggestion",
-                assignAgent.agentId, orderId);
+        // getContext().getLog().info("FulFillOrder: Trying Assigning the agent {} for order {} on delivery'suggestion",
+        //        assignAgent.agentId, orderId);
         agentReqList.remove(assignAgent.agentId);
         probeAgents();
         return Behaviors.same();
@@ -305,8 +304,8 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
 
         if (agentAvailableStatus.agent != null) {
             if (orderStatus.equals(OrderStatus.unassigned)) {
-                getContext().getLog().info("FulFillOrder : Setting agentId to {} for order Id {}",
-                        agentAvailableStatus.agent.getAgentId(), orderId);
+                // getContext().getLog().info("FulFillOrder : Setting agentId to {} for order Id {}",
+                //        agentAvailableStatus.agent.getAgentId(), orderId);
                 agentAvailableStatus.agentReplyTo
                         .tell(new Agent.ConfirmationRequest(orderId, true, getContext().getSelf()));
                 this.agentId = agentAvailableStatus.agent.getAgentId();
@@ -327,11 +326,11 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     }
 
     private void probeAgents() {
-        getContext().getLog().info("FulFillOrder : Probing agents for order Id {}", orderId);
+        // getContext().getLog().info("FulFillOrder : Probing agents for order Id {}", orderId);
         for (Integer agentid : agentMap.keySet()) {
             if (!this.agentReqList.contains(agentid)) {
-                getContext().getLog().info("FulFillOrder : Sending ActorStatus to agent {} for order Id {}",
-                        agentid, orderId);
+                // getContext().getLog().info("FulFillOrder : Sending ActorStatus to agent {} for order Id {}",
+                //        agentid, orderId);
                 agentMap.get(agentid).tell(new Agent.AvailableRequest(orderId, getContext().getSelf()));
                 this.agentReqList.add(agentid);
                 break;
@@ -341,7 +340,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
          * agentMap.forEach((agentId, agentRef) -> {
          * System.out.println("!!!!!!!!!!!!!    " + agentReqList +"  !!!!!!!!!!!!!");
          * if (!this.agentReqList.contains(agentId)) {
-         * getContext().getLog().
+         * // getContext().getLog().
          * info("FulFillOrder : Sending ActorStatus to agent {} for order Id {}",
          * agentId, orderId);
          * agentRef.tell(new Agent.AvailableRequest(orderId, getContext().getSelf()));
@@ -352,8 +351,8 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     }
 
     private Behavior<Command> onGetOrderCmd(GetOrderCmd getOrderCmd) {
-        getContext().getLog().info("FulFillOrder : Sending order details with id {} to {}", orderId,
-                getOrderCmd.replyTo);
+        // getContext().getLog().info("FulFillOrder : Sending order details with id {} to {}", orderId,
+        //        getOrderCmd.replyTo);
         getOrderCmd.replyTo.tell(new GetOrderResponse(new OrderPlaced(this.orderId, this.orderStatus, this.agentId)));
         return Behaviors.same();
     }

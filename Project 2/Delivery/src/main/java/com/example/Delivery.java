@@ -32,7 +32,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     public Delivery(ActorContext<Command> context) {
         super(context);
         orderId = 1000;
-        getContext().getLog().info("Delivery Actor created");
+        // getContext().getLog().info("Delivery Actor created");
 
         // reading the database
         ReadDB readfile = new ReadDB();
@@ -235,7 +235,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
             getContext().stop(trackOrder.getOrderRef());
         });
         orderMap.clear();
-        agentMap.forEach((k, v) -> v.tell(new Agent.SignInOut(false)));
+        agentMap.forEach((k, v) -> v.tell(new Agent.Reset()));
         command.replyTo.tell(new ReInitializeResponse());
         return this;
     }
@@ -259,7 +259,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         if (agentIsFree.agentRef.toString().equals(agentMap.get(agentIsFree.agentId).toString())) {
             TrackOrder waitingOrder = getWaitingOrder();
             if (waitingOrder != null) {
-                getContext().getLog().info("DeliveryAgent : Agent {} is Free", agentIsFree.agentId);
+                // getContext().getLog().info("DeliveryAgent : Agent {} is Free", agentIsFree.agentId);
                 waitingOrder.getOrderRef().tell(new FulFillOrder.AssignAgent(agentIsFree.agentId));
             }
         }
@@ -274,8 +274,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         
         Integer deliveredOrderId = orderDeliveredCmd.order.getOrderId();
 
-        getContext().getLog().info("Delivery: Sending OrderIsDelivered to FulFillOrder for orderId {}",
-                deliveredOrderId);
+        // getContext().getLog().info("Delivery: Sending OrderIsDelivered to FulFillOrder for orderId {}",
+         //       deliveredOrderId);
         
                 // log.info("Delivery : Order is assigned {}",
         // orderMap.get(deliveredOrderId).getIsAgentAssigned());
@@ -304,9 +304,9 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
             TrackOrder waitingOrder = getWaitingOrder();
 
             if (waitingOrder != null) {
-                getContext().getLog().info(
-                        "Notifying a waiting fulfillorder actor about DeliveryAgent : Agent {} is Available",
-                        agentSignInCmd.agentId);
+                // getContext().getLog().info(
+                 //       "Notifying a waiting fulfillorder actor about DeliveryAgent : Agent {} is Available",
+                 //       agentSignInCmd.agentId);
                 waitingOrder.getOrderRef().tell(new FulFillOrder.AssignAgent(agentSignInCmd.agentId));
             }
         }
@@ -356,7 +356,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
             ActorRef<FulFillOrder.Command> orderRef = orderMap.get(getOrderCmd.orderId).getOrderRef();
             orderRef.tell(new FulFillOrder.GetOrderCmd(getOrderCmd.replyTo));
         } else {
-            getContext().getLog().info("Order with Id {} not found", getOrderCmd.orderId);
+            // getContext().getLog().info("Order with Id {} not found", getOrderCmd.orderId);
             getOrderCmd.replyTo.tell(new FulFillOrder.GetOrderResponse(null));
         }
         return this;
