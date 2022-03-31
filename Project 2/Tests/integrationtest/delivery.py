@@ -151,6 +151,7 @@ def testRequestOrder(t, custId, restId, itemId, qty, statuscode, orderId=0):
             print(response + ", " + orderId)
     except:
         test_fail()
+    sleep(1)
 
 
 '''
