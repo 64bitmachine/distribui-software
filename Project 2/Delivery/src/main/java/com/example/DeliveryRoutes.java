@@ -3,7 +3,6 @@ package com.example;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 
-import com.example.dto.AgentSignInOut;
 import com.example.dto.OrderDelivered;
 import com.example.dto.PlaceOrder;
 
@@ -42,11 +41,7 @@ public class DeliveryRoutes {
 		return AskPattern.ask(deliveryActor, Delivery.ReInitialize::new, askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.AgentSignInOutResponse> agentSignIn(AgentSignInOut agentSignInOut) {
-		return AskPattern.ask(deliveryActor,
-				ref -> new Delivery.AgentSignInOutCommand(ref, agentSignInOut.getAgentId(), true), askTimeout,
-				scheduler);
-	}
+	
 
 	private CompletionStage<Delivery.RequestOrderResponse> requestOrder(PlaceOrder placeOrder) {
 		// log.info("serving requestOrder request");
@@ -54,11 +49,6 @@ public class DeliveryRoutes {
 		return AskPattern.ask(deliveryActor, ref -> new Delivery.RequestOrder(ref, placeOrder), askTimeout, scheduler);
 	}
 
-	private CompletionStage<Delivery.AgentSignInOutResponse> agentSignOut(AgentSignInOut agentSignInOut) {
-		return AskPattern.ask(deliveryActor,
-				ref -> new Delivery.AgentSignInOutCommand(ref, agentSignInOut.getAgentId(), false), askTimeout,
-				scheduler);
-	}
 
 	private CompletionStage<Delivery.GetOrderDeliveredResp> orderDelivered(OrderDelivered orderDelivered) {
 		// log.info("serving orderDelivered request");
@@ -70,9 +60,7 @@ public class DeliveryRoutes {
 		return AskPattern.ask(deliveryActor, ref -> new Delivery.GetOrderCmd(ref, num), askTimeout, scheduler);
 	}
 
-	private CompletionStage<Agent.GetAgentResponse> getAgent(String num) {
-		return AskPattern.ask(deliveryActor, ref -> new Delivery.GetAgentCmd(ref, num), askTimeout, scheduler);
-	}
+	
 
 	/**
 	 * request - post /reInitialize
@@ -82,26 +70,6 @@ public class DeliveryRoutes {
 			pathEnd(() -> concat(
 					post(() -> onSuccess(reInitialize(), (t) -> complete(StatusCodes.CREATED))))));
 
-	/**
-	 * request - post /agentSignIn
-	 * requestbody - {"agentId": num}
-	 * response - http code 201
-	 */
-	Route agentSignInRoute = concat(
-			pathEnd(() -> concat(
-					post(() -> entity(
-							Jackson.unmarshaller(AgentSignInOut.class),
-							agent -> onSuccess(agentSignIn(agent), (t) -> complete(StatusCodes.CREATED)))))));
-
-	/**
-	 * request - get /agent/num
-	 * response - http code 200
-	 * - {"agentId": num, "status": y}
-	 */
-	Route agentRoute = concat(
-			path(PathMatchers.segment(), (String num) -> concat(
-					get(() -> onSuccess(getAgent(num),
-							performed -> complete(StatusCodes.OK, performed.agent, Jackson.marshaller()))))));
 
 	/**
 	 * request - get /order/num
@@ -127,16 +95,7 @@ public class DeliveryRoutes {
 							Jackson.unmarshaller(OrderDelivered.class),
 							order -> onSuccess(orderDelivered(order), (t) -> complete(StatusCodes.CREATED)))))));
 
-	/**
-	 * request - post /agentSignOut
-	 * requestbody - {"agentId": num}
-	 * response - http code 201
-	 */
-	Route agentSignOutRoute = concat(
-			pathEnd(() -> concat(
-					post(() -> entity(
-							Jackson.unmarshaller(AgentSignInOut.class),
-							agent -> onSuccess(agentSignOut(agent), (t) -> complete(StatusCodes.CREATED)))))));
+
 
 	/**
 	 * request - post /requestOrder
@@ -158,11 +117,8 @@ public class DeliveryRoutes {
 	public Route deliveryRoutes() {
 		return concat(
 				pathPrefix("reInitialize", () -> reInitializeRoute),
-				pathPrefix("agentSignIn", () -> agentSignInRoute),
 				pathPrefix("requestOrder", () -> requestOrderRoute),
-				pathPrefix("agentSignOut", () -> agentSignOutRoute),
 				pathPrefix("orderDelivered", () -> orderDeliveredRoute),
-				pathPrefix("order", () -> orderRoute),
-				pathPrefix("agent", () -> agentRoute));
+				pathPrefix("order", () -> orderRoute));
 	}
 }

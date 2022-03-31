@@ -51,6 +51,8 @@ def testOrder(t, order, type, status):
             response = requests.post(restaurant_url + "/" + type, json=order[i])
             if response.status_code == status:
                 test_pass()
+                if type == "getRestaurantItem":
+                    return response
             else:
                 print(order, type, response.status_code)
                 test_fail()

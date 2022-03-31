@@ -50,4 +50,10 @@ public class RestaurantController {
 			return new ResponseEntity<Item>(item,HttpStatus.CREATED);
 		return new ResponseEntity<Item>(item,HttpStatus.GONE);
 	}
+
+	@PostMapping("/getRestaurantItem")
+	public ResponseEntity<Integer> getRestaurantItem(@RequestBody RefillAndAcceptItemDto refill)
+	{
+		return new ResponseEntity<Integer>(restaurantService.getRestaurantItem(refill),HttpStatus.OK);
+	}
 }

@@ -1,11 +1,9 @@
 package com.example;
 
-import java.util.List;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
-import com.example.Agent.AgentCommand;
 import com.example.DBInit.ReadDB;
-import com.example.dto.DeliveryAgent;
 import com.example.dto.OrderDelivered;
 import com.example.dto.PlaceOrder;
 
@@ -21,7 +19,6 @@ import akka.actor.typed.javadsl.Receive;
  */
 public class Delivery extends AbstractBehavior<Delivery.Command> {
 
-    private TreeMap<Integer, ActorRef<AgentCommand>> agentMap;
     private TreeMap<Integer, TrackOrder> orderMap;
     private Integer orderId;
 
@@ -36,18 +33,7 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
 
         // reading the database
         ReadDB readfile = new ReadDB(path);
-        List<DeliveryAgent> deliveryAgents = readfile.readDeliveryAgentIDFromFile();
-        agentMap = new TreeMap<>();
         orderMap = new TreeMap<>();
-
-        // Delivery Agent actors should also be spawned before the first http request is
-        // received
-        for (DeliveryAgent agent : deliveryAgents) {
-            ActorRef<Agent.AgentCommand> agentRef = context.spawn(
-                    Agent.create(getContext().getSelf(), agent.getAgentId(), agent.getStatus()),
-                    "agent-" + agent.getAgentId());
-            agentMap.put(agent.getAgentId(), agentRef);
-        }
     }
 
     /**
@@ -59,38 +45,6 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
 
         public AgentAssigned(Integer orderId) {
             this.orderId = orderId;
-        }
-    }
-
-    /**
-     * AgentSignInOutCommand : External Controller send this comand to sign in and
-     * sign out an agent.
-     * 
-     * @args isSignIn : true for sign in and false for sign out
-     */
-    public final static class AgentSignInOutCommand implements Command {
-        public final int agentId;
-        public final ActorRef<AgentSignInOutResponse> replyTo;
-        public final boolean isSignIn;
-
-        public AgentSignInOutCommand(ActorRef<AgentSignInOutResponse> replyTo, int agentId, boolean isSignIn) {
-            this.agentId = agentId;
-            this.replyTo = replyTo;
-            this.isSignIn = isSignIn;
-        }
-    }
-
-    /**
-     * GetAgentCmd : Controller sends this command to Delivery Actor to get the
-     * appropriate agent
-     */
-    public final static class GetAgentCmd implements Command {
-        public final int agentId;
-        public final ActorRef<Agent.GetAgentResponse> replyTo;
-
-        public GetAgentCmd(ActorRef<Agent.GetAgentResponse> replyTo, String agentId) {
-            this.agentId = Integer.parseInt(agentId);
-            this.replyTo = replyTo;
         }
     }
 
@@ -167,29 +121,16 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
      * DestroyFulFillOrder : FulFillOrder Send this to Delivery to destroy it once
      * the order is delivered.
      */
-    public final static class DestroyFulFillOrder implements Command {
+    public final static class MarkFulFillOrder implements Command {
         public final Integer orderId;
         public final ActorRef<FulFillOrder.Command> orderRef;
 
-        public DestroyFulFillOrder(Integer orderId, ActorRef<FulFillOrder.Command> orderRef) {
+        public MarkFulFillOrder(Integer orderId, ActorRef<FulFillOrder.Command> orderRef) {
             this.orderId = orderId;
             this.orderRef = orderRef;
         }
     }
 
-    /**
-     * AgentIsFree : Agent Actor send this to Delivery on getting freed from the
-     * assigned order upon its delivery
-     */
-    public final static class AgentIsFree implements Command {
-        public final Integer agentId;
-        public final ActorRef<Agent.AgentCommand> agentRef;
-
-        public AgentIsFree(Integer agentId, ActorRef<Agent.AgentCommand> agentRef) {
-            this.agentId = agentId;
-            this.agentRef = agentRef;
-        }
-    }
 
     /**
      * GetOrderDeliveredResp : Delivery Actor sends this command to Controller as a
@@ -203,27 +144,8 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
             this.orderId = orderId;
         }
     }
-    /**
-     * ActionPerformed : Yet to be implemented
-     */
-    /*
-     * public final static class ActionPerformed implements Command {
-     * public final String description;
-     * 
-     * public ActionPerformed(String description) {
-     * this.description = description;
-     * }
-     * }
-     */
 
-    /**
-     * AgentSignInOutResponse : Response to controller by Delivery Actor after
-     * receiving AgentSignInOutCommand
-     */
-    public final static class AgentSignInOutResponse {
-        public AgentSignInOutResponse() {
-        }
-    }
+
 
     public static Behavior<Command> create(String path) {
         return Behaviors.setup(context -> new Delivery(context,path));
@@ -235,7 +157,6 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
             getContext().stop(trackOrder.getOrderRef());
         });
         orderMap.clear();
-        agentMap.forEach((k, v) -> v.tell(new Agent.Reset()));
         command.replyTo.tell(new ReInitializeResponse());
         return this;
     }
@@ -245,84 +166,22 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         return newReceiveBuilder()
                 .onMessage(ReInitialize.class, this::onReInitialize)
                 .onMessage(RequestOrder.class, this::onRequestOrder)
-                .onMessage(AgentSignInOutCommand.class, this::onAgentSignInOut)
-                .onMessage(GetAgentCmd.class, this::onGetAgent)
                 .onMessage(GetOrderCmd.class, this::onGetOrder)
-                .onMessage(AgentAssigned.class, this::onAgentAssigned)
                 .onMessage(OrderDeliveredCmd.class, this::onOrderDeliveredCmd)
-                .onMessage(AgentIsFree.class, this::onAgentIsFree)
-                .onMessage(DestroyFulFillOrder.class, this::onDestroyFulFillOrder)
+                //.onMessage(MarkFulFillOrder.class, this::onMarkFulFillOrder)
                 .build();
     }
 
-    private Behavior<Command> onAgentIsFree(AgentIsFree agentIsFree) {
-        if (agentIsFree.agentRef.toString().equals(agentMap.get(agentIsFree.agentId).toString())) {
-            TrackOrder waitingOrder = getWaitingOrder();
-            if (waitingOrder != null) {
-                // getContext().getLog().info("DeliveryAgent : Agent {} is Free", agentIsFree.agentId);
-                waitingOrder.getOrderRef().tell(new FulFillOrder.AssignAgent(agentIsFree.agentId));
-            }
-        }
-        return Behaviors.same();
-    }
 
-    private Behavior<Command> onDestroyFulFillOrder(DestroyFulFillOrder destroy) {
-        return Behaviors.same();
-    }
+    // private Behavior<Command> onMarkFulFillOrder(MarkFulFillOrder deliveredOrder) {
+    //     if(orderMap.get(deliveredOrder.orderId).toString().equals(deliveredOrder.orderRef.toString())) {
+    //         orderMap.get(deliveredOrder.orderId).setIsAgentAssigned(true);
+    //     }
+    //     return Behaviors.same();
+    // }
 
     private Behavior<Command> onOrderDeliveredCmd(OrderDeliveredCmd orderDeliveredCmd) {
-        
-        Integer deliveredOrderId = orderDeliveredCmd.order.getOrderId();
-
-        // getContext().getLog().info("Delivery: Sending OrderIsDelivered to FulFillOrder for orderId {}",
-         //       deliveredOrderId);
-        
-                // log.info("Delivery : Order is assigned {}",
-        // orderMap.get(deliveredOrderId).getIsAgentAssigned());
-        if (orderMap.get(deliveredOrderId).getIsAgentAssigned() && orderMap.containsKey(deliveredOrderId))
-            orderMap.get(deliveredOrderId).getOrderRef().tell(new FulFillOrder.OrderIsDelivered());
-
-        // respond to the client
-        orderDeliveredCmd.replyTo.tell(new GetOrderDeliveredResp(orderDeliveredCmd.order.getOrderId()));
         return Behaviors.same();
-    }
-
-    private Behavior<Command> onAgentAssigned(AgentAssigned agentAssigned) {
-        orderMap.get(agentAssigned.orderId).setIsAgentAssigned(true);
-        return Behaviors.same();
-    }
-
-    private Behavior<Command> onAgentSignInOut(AgentSignInOutCommand agentSignInCmd) {
-
-        agentMap.get(agentSignInCmd.agentId).tell(new Agent.SignInOut(agentSignInCmd.isSignIn));
-
-        // providing the response to the client
-        agentSignInCmd.replyTo.tell(new AgentSignInOutResponse());
-
-        // checking if request is signin and tryign to notify waiting order about the agent signin
-        if (agentSignInCmd.isSignIn) {
-            TrackOrder waitingOrder = getWaitingOrder();
-
-            if (waitingOrder != null) {
-                // getContext().getLog().info(
-                 //       "Notifying a waiting fulfillorder actor about DeliveryAgent : Agent {} is Available",
-                 //       agentSignInCmd.agentId);
-                waitingOrder.getOrderRef().tell(new FulFillOrder.AssignAgent(agentSignInCmd.agentId));
-            }
-        }
-
-        return Behaviors.same();
-    }
-
-    private TrackOrder getWaitingOrder() {
-        for (Integer orderId : orderMap.keySet()) {
-            TrackOrder order = orderMap.get(orderId);
-            // System.out.println("############" + orderId);
-            if (order.getIsAgentAssigned() == false) {
-                return order;
-            }
-        }
-        return null;
     }
 
     /**
@@ -333,23 +192,21 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
      */
     private Behavior<Command> onRequestOrder(RequestOrder reqOrder) {
 
+        // spawn a FulfillOrder actor
+        // TimeUnit.SECONDS.sleep(1);
+        ActorRef<FulFillOrder.Command> orderActor = getContext().spawn(
+                FulFillOrder.create(reqOrder.placeOrder, orderId, getContext().getSelf()),
+                "Order-" + orderId);
+        orderMap.put(orderId, new TrackOrder(orderActor, false));
+
         // generate a fresh order ID and returning the order ID to the client
         reqOrder.replyTo.tell(new RequestOrderResponse(orderId));
 
-        // spawn a FulfillOrder actor
-        ActorRef<FulFillOrder.Command> orderActor = getContext().spawn(
-                FulFillOrder.create(reqOrder.placeOrder, orderId, agentMap, getContext().getSelf()),
-                "Order-" + orderId);
-        orderMap.put(orderId, new TrackOrder(orderActor, false));
         orderId++;
 
         return this;
     }
 
-    private Behavior<Command> onGetAgent(GetAgentCmd getAgentCmd) {
-        agentMap.get(getAgentCmd.agentId).tell(new Agent.GetAgentCmd(getAgentCmd.replyTo));
-        return this;
-    }
 
     private Behavior<Command> onGetOrder(GetOrderCmd getOrderCmd) {
         if (orderMap.containsKey(getOrderCmd.orderId)) {

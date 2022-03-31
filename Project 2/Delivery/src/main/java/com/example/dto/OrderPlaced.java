@@ -10,5 +10,4 @@ import lombok.NoArgsConstructor;
 public class OrderPlaced {
     private int orderId;
     private String status;
-    private int agentId;
 }
