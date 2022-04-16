@@ -57,7 +57,7 @@ def testReinitialize(t):
             test_fail()
     except:
         test_fail()
-    sleep(2)    
+    #sleep(2)    
 
 '''
 test case for get agent details
@@ -132,9 +132,10 @@ def testRequestOrder(t, custId, restId, itemId, qty, statuscode):
                                  "custId": custId, "restId": restId, "itemId": itemId, "qty": qty})
         if response.status_code == statuscode:
             test_pass()
+            print("pass: ", response.json())
         else:
             test_fail()
-            print(response.json())
+            print("fail: ", response.json())
     except:
         test_fail()
 
@@ -259,12 +260,14 @@ if __name__ == "__main__":
     # ---------------------  /requestOrder  --------------------
     testRequestOrder(24, 301, 101, 2, 10, 201)
     testRequestOrder(25, 302, 101, 2, 11, 410)
-
+    testGetOrder(28, 1001, "rejected", -1, 200)
+    testGetOrder(28, 1000, "rejected", -1, 200)
     # ---------------------  /getOrder  ------------------------
-    testGetOrder(26, 1000, "unassigned", -1, 200)
+    testGetOrder(26, 1002, "unassigned", -1, 200)
     testAgentSignIn(27, 201, 201)
-    testGetOrder(28, 1000, "assigned", 201, 200)
-
+    #sleep(2)
+    testGetOrder(28, 1002, "assigned", 201, 200)
+    testGetOrder(28, 1003, "rejected", -1, 200)
 
     # ---------------------  composite test 1 ------------------
     testReinitialize(29)
@@ -273,7 +276,7 @@ if __name__ == "__main__":
     wallet.testAddBalance(32, 301, 500, 201)
     testRequestOrder(33, 301, 101, 2, 10, 201)
     
-    # wallet.testGetBalance(34, 301, 200,144)
+    wallet.testGetBalance(34, 301, 200,144)
     # ---------------------  composite test 2 ------------------
     testReinitialize(35)
     wallet.testReinitialize(36)
@@ -310,7 +313,7 @@ if __name__ == "__main__":
     
     wallet.testAddBalance(63, 301, 300, 201)
     testRequestOrder(64, 301, 101, 2, 10, 201)
-    testGetOrder(65, 1000, "unassigned", -1, 200)
+    testGetOrder(65, 1000, "rejected", -1, 200)
     order = [{"restId": 101, "itemId": 2, "qty": 10}]
     restaurant.testOrder(65, order, "refillItem", 201)
     wallet.testGetBalance(66, 301, 0, 200)

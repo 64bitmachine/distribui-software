@@ -14,7 +14,7 @@ import akka.actor.typed.javadsl.Receive;
 
 public class Agent extends AbstractBehavior<Agent.AgentCommand> {
 
-    private final DeliveryAgent agent;
+    private final Integer agentId;
     private Integer orderId;
 
     private ActorRef<Delivery.Command> deliveryRef;
@@ -117,7 +117,8 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
         super(context);
         // getContext().getLog().info("Created Delivery Agent with Id - {}", agentId);
         this.deliveryRef = deliveryRef;
-        agent = new DeliveryAgent(agentId, agentStatus);
+        this.agentId = agentId;
+        Shared.agentStatusMap.put(agentId,agentStatus);
         orderId = null;
     }
 
@@ -135,7 +136,7 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
 
     private Behavior<AgentCommand> onReset(Reset reset)
     {
-        agent.setStatus(DeliveryAgentStatus.signed_out);
+        Shared.agentStatusMap.put(agentId,DeliveryAgentStatus.signed_out);
         orderId = null;
         return Behaviors.same();
     }
@@ -144,21 +145,22 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
         // getContext().getLog().info("Agent with agent id {} having orderId {} is free from orderId {} ",agent.getAgentId(),orderId, free.orderId);
 
         if (orderId != null && orderId.equals(free.orderId)) {
-            agent.setStatus(DeliveryAgentStatus.available);
+            Shared.agentStatusMap.put(agentId,DeliveryAgentStatus.available);
             orderId = null;
             /** Inform Delivery Agent here */
-            deliveryRef.tell(new Delivery.AgentIsFree(agent.getAgentId(), getContext().getSelf()));
+            deliveryRef.tell(new Delivery.AgentIsFree(agentId, getContext().getSelf()));
         }
         return Behaviors.same();
     }
 
     private Behavior<AgentCommand> onSignInOut(SignInOut signIn) {
         if (signIn.isSignIn) {
-            agent.setStatus(DeliveryAgentStatus.available);
+            Shared.agentStatusMap.put(agentId,DeliveryAgentStatus.available);
             // getContext().getLog().info("Agent with Id {} has signed in", agent.getAgentId());
         } else {
-            if (this.agent.getStatus().equals(DeliveryAgentStatus.available)) {
-                agent.setStatus(DeliveryAgentStatus.signed_out);
+            if (Shared.agentStatusMap.get(agentId).equals(DeliveryAgentStatus.available)) {
+                // agent.setStatus(DeliveryAgentStatus.signed_out);
+                Shared.agentStatusMap.put(agentId,DeliveryAgentStatus.signed_out);
                 // getContext().getLog().info("Agent with Id {} has signed out", agent.getAgentId());
             }
         }
@@ -167,16 +169,17 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
 
     private Behavior<AgentCommand> onAvailableRequest(AvailableRequest request) {
 
-        if (agent.getStatus().equals(DeliveryAgentStatus.available)) {
+        if (Shared.agentStatusMap.get(agentId).equals(DeliveryAgentStatus.available)) {
             // getContext().getLog().info("Sending AgentAvailableStatus from {} to FulFillOrder for order Id {}",
                    //agent.getAgentId(), orderId);
             orderId = request.orderId;
-            agent.setStatus(DeliveryAgentStatus.unavailable);
-            request.replyTo.tell(new AgentIsAvailableCmd(getContext().getSelf(), agent));
+           //agent.setStatus(DeliveryAgentStatus.unavailable);
+            Shared.agentStatusMap.put(agentId,DeliveryAgentStatus.unavailable);
+            request.replyTo.tell(new AgentIsAvailableCmd(agentId));
         } else {
             // agent is unavailable
             // getContext().getLog().info("Agent with Id {} is not available", agent.getAgentId());
-            request.replyTo.tell(new AgentIsAvailableCmd(getContext().getSelf(), null));
+            request.replyTo.tell(new AgentIsAvailableCmd( null));
         }
         return Behaviors.same();
     }
@@ -191,7 +194,8 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
             // getContext().getLog().info(
             //        "Agent : Making Agent with agentId {} avialable as order Id {} is already assigned",
             //        agent.getAgentId(), orderId);
-            agent.setStatus(DeliveryAgentStatus.available);
+            //agent.setStatus(DeliveryAgentStatus.available);
+            Shared.agentStatusMap.put(agentId,DeliveryAgentStatus.available);
             orderId = null;
         }
         return Behaviors.same();
@@ -199,7 +203,7 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
 
     private Behavior<AgentCommand> onGetAgent(GetAgentCmd getAgentCmd) {
         // getContext().getLog().info("Sending Agent with Id - {}", agent.getAgentId());
-        getAgentCmd.replyTo.tell(new GetAgentResponse(agent));
+        getAgentCmd.replyTo.tell(new GetAgentResponse(new DeliveryAgent(agentId,Shared.agentStatusMap.get(agentId))));
         return Behaviors.same();
     }
 

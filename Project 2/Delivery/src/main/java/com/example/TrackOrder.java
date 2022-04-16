@@ -11,11 +11,11 @@ public class TrackOrder {
      *      else false.
      */
     private ActorRef<FulFillOrder.Command> orderRef;
-    private boolean isAgentAssigned;
+    private String status;
 
-    public TrackOrder(ActorRef<FulFillOrder.Command> orderRef, boolean isAgentAssigned) {
+    public TrackOrder(ActorRef<FulFillOrder.Command> orderRef, String status) {
         this.orderRef = orderRef;
-        this.isAgentAssigned = isAgentAssigned;
+        this.status = status;
     }
 
     public ActorRef<FulFillOrder.Command> getOrderRef() {
@@ -26,12 +26,13 @@ public class TrackOrder {
         this.orderRef = orderRef;
     }
 
-    public boolean getIsAgentAssigned() {
-        return this.isAgentAssigned;
+    public String getStatus() {
+        return this.status;
     }
 
-    public void setIsAgentAssigned(boolean agentAssigned) {
-        this.isAgentAssigned = agentAssigned;
+    public void setStatus(String status) {
+        this.status = status;
     }
-
+   
 }
+

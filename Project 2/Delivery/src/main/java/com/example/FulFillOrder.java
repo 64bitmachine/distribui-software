@@ -7,10 +7,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import com.example.Agent.AgentCommand;
-import com.example.dto.DeliveryAgent;
+import com.example.Delivery.OrderReject;
+import com.example.Delivery.RequestOrder;
+import com.example.Delivery.RequestOrderResponse;
+import com.example.dto.DeliveryAgentStatus;
 import com.example.dto.Item;
 import com.example.dto.OrderPlaced;
 import com.example.dto.OrderStatus;
@@ -25,14 +26,12 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 
 public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
-    private Map<Integer, ActorRef<AgentCommand>> agentMap;
-    private ActorRef<Delivery.Command> deliveryRef;
-    private PlaceOrder placeOrder;
+    
+    private RequestOrder reqOrder;
     private Integer orderId;
     private String orderStatus;
     private Integer agentId;
     private Item item;
-    private ActorRef<Agent.AgentCommand> agentRef;
     private List<Integer> agentReqList;
 
     public static final String WALLET_SERVICE = ConfigFactory.load().getConfig("my-app.wallet-server")
@@ -72,12 +71,11 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
      * avialable.
      */
     public final static class AgentIsAvailableCmd implements Command {
-        private final ActorRef<Agent.AgentCommand> agentReplyTo;
-        private final DeliveryAgent agent;
+        // private final ActorRef<Agent.AgentCommand> agentReplyTo;
+        private final Integer agentId;
 
-        AgentIsAvailableCmd(ActorRef<Agent.AgentCommand> agentReplyTo, DeliveryAgent agent) {
-            this.agentReplyTo = agentReplyTo;
-            this.agent = agent;
+        AgentIsAvailableCmd(Integer agentId) {
+            this.agentId = agentId;
         }
     }
 
@@ -112,24 +110,20 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         // }
     }
 
-    public FulFillOrder(ActorContext<Command> context, PlaceOrder placeOrder,
-            Integer orderId, Map<Integer, ActorRef<AgentCommand>> agentMap, ActorRef<Delivery.Command> deliveryRef) {
+    public FulFillOrder(ActorContext<Command> context, RequestOrder reqOrder, Integer orderId) {
 
         super(context);
         // getContext().getLog().info("Creating Order with order Id {}", orderId);
 
-        this.placeOrder = placeOrder;
-        this.agentMap = agentMap;
+        this.reqOrder = reqOrder;
         this.orderId = orderId;
 
         //  firstly setting its order status to unassigned
         this.orderStatus = OrderStatus.unassigned;
         
         this.agentId = -1;
-        this.agentRef = null;
         this.item = null;
         this.agentReqList = new ArrayList<>();
-        this.deliveryRef = deliveryRef;
 
         // http post request to restaurant service to place order
         try {
@@ -142,9 +136,9 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
             conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
 
-            String input = "{\"restId\": " + this.placeOrder.getRestId() + ", \"itemId\": "
-                    + this.placeOrder.getItemId()
-                    + ", \"qty\": " + this.placeOrder.getQty() + "}";
+            String input = "{\"restId\": " + this.reqOrder.placeOrder.getRestId() + ", \"itemId\": "
+                    + this.reqOrder.placeOrder.getItemId()
+                    + ", \"qty\": " + this.reqOrder.placeOrder.getQty() + "}";
 
             // send request
             conn.getOutputStream().write(input.getBytes());
@@ -180,8 +174,12 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
             e.printStackTrace();
         }
 
+        if(this.item == null){
+            orderStatus = OrderStatus.rejected;
+            Shared.deliveryRef.tell(new OrderReject(orderId));
+        }
         // if item is not null then send request to wallet service to deduct amount
-        if (this.item != null) {
+        else {
             try {
                 URL url = new URL(WALLET_SERVICE + "/deductBalance");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -192,8 +190,8 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
                 conn.setRequestProperty("Accept", "application/json");
                 conn.setDoOutput(true);
 
-                String input = "{\"custId\": " + this.placeOrder.getCustId() + ", \"amount\": "
-                        + this.placeOrder.getQty() * item.getPrice() + "}";
+                String input = "{\"custId\": " + this.reqOrder.placeOrder.getCustId() + ", \"amount\": "
+                        + this.reqOrder.placeOrder.getQty() * item.getPrice() + "}";
 
                 // send request
                 conn.getOutputStream().write(input.getBytes());
@@ -208,7 +206,8 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
                 } else {
 
                     // getContext().getLog().info("Order not placed");
-                    
+                    orderStatus = OrderStatus.rejected;
+                    Shared.deliveryRef.tell(new OrderReject(orderId));
                     // revert the previous transaction on the restaurant service
                     try {
 
@@ -221,9 +220,9 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
                         conn.setRequestProperty("Accept", "application/json");
                         conn.setDoOutput(true);
 
-                        input = "{\"restId\": " + this.placeOrder.getRestId() + ", \"itemId\": "
-                                + this.placeOrder.getItemId()
-                                + ", \"qty\": " + this.placeOrder.getQty() + "}";
+                        input = "{\"restId\": " + this.reqOrder.placeOrder.getRestId() + ", \"itemId\": "
+                                + this.reqOrder.placeOrder.getItemId()
+                                + ", \"qty\": " + this.reqOrder.placeOrder.getQty() + "}";
 
                         // send request
                         conn.getOutputStream().write(input.getBytes());
@@ -245,28 +244,16 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
                 e.printStackTrace();
             }
         }
-
+        reqOrder.replyTo.tell(new RequestOrderResponse(orderId));
         // getContext().getLog().info("Order created with order Id {}, order status {}", orderId, orderStatus);
     }
 
-    /**
-     * public static class AgentAssignConfirm implements Command
-     * {
-     * private ActorRef<Agent.AgentCommand> agentReplyTo;
-     * private DeliveryAgent agent;
-     * private Boolean isAssigned;
-     * AgentAssignConfirm(ActorRef<Agent.AgentCommand> agentReplyTo, DeliveryAgent
-     * agent, Boolean isAssigned ){
-     * this.agentReplyTo = agentReplyTo;
-     * this.agent = agent;
-     * this.isAssigned = isAssigned;
-     * }
-     * }
-     */
-
-    public static Behavior<Command> create(PlaceOrder placeOrder, Integer orderId,
-            Map<Integer, ActorRef<AgentCommand>> agentMap, ActorRef<Delivery.Command> deliveryRef) {
-        return Behaviors.setup(context -> new FulFillOrder(context, placeOrder, orderId, agentMap, deliveryRef));
+    
+    // public static Behavior<Command> create(PlaceOrder placeOrder, Integer orderId) {
+    //     return Behaviors.setup(context -> new FulFillOrder(context, placeOrder, orderId));
+    // }
+    public static Behavior<Command> create(RequestOrder reqOrder, Integer orderId) {
+        return Behaviors.setup(context -> new FulFillOrder(context, reqOrder, orderId));
     }
 
     @Override
@@ -287,8 +274,7 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
                 
         orderStatus = OrderStatus.delivered;
         // notify the agent that they are free
-        agentRef.tell(new Agent.Free(orderId));
-        deliveryRef.tell(new Delivery.DestroyFulFillOrder(orderId, getContext().getSelf()));
+        Shared.agentMap.get(agentId).tell(new Agent.Free(orderId));
         return Behaviors.same();
     }
 
@@ -300,21 +286,21 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
         return Behaviors.same();
     }
 
-    private Behavior<Command> onAgentIsAvailableCmd(AgentIsAvailableCmd agentAvailableStatus) {
+    private Behavior<Command> onAgentIsAvailableCmd(AgentIsAvailableCmd res) {
 
-        if (agentAvailableStatus.agent != null) {
+        if (res.agentId != null) {
             if (orderStatus.equals(OrderStatus.unassigned)) {
                 // getContext().getLog().info("FulFillOrder : Setting agentId to {} for order Id {}",
                 //        agentAvailableStatus.agent.getAgentId(), orderId);
-                agentAvailableStatus.agentReplyTo
-                        .tell(new Agent.ConfirmationRequest(orderId, true, getContext().getSelf()));
-                this.agentId = agentAvailableStatus.agent.getAgentId();
-                this.agentRef = agentAvailableStatus.agentReplyTo;
+                // res.agentReplyTo.tell(new Agent.ConfirmationRequest(orderId, true, getContext().getSelf()));
+
+                Shared.agentMap.get(res.agentId).tell(new Agent.ConfirmationRequest(orderId, true, getContext().getSelf()));      
+                this.agentId = res.agentId;
                 this.agentReqList.clear();
                 this.orderStatus = OrderStatus.assigned;
 
                 // Informing Delivery Actor that order has been assigned to an agent
-                deliveryRef.tell(new Delivery.AgentAssigned(orderId));
+                Shared.deliveryRef.tell(new Delivery.AgentAssigned(orderId));
             }
         } else {
             // previously requested agent is not available, so request for another agent
@@ -326,28 +312,33 @@ public class FulFillOrder extends AbstractBehavior<FulFillOrder.Command> {
     }
 
     private void probeAgents() {
+
         // getContext().getLog().info("FulFillOrder : Probing agents for order Id {}", orderId);
-        for (Integer agentid : agentMap.keySet()) {
-            if (!this.agentReqList.contains(agentid)) {
-                // getContext().getLog().info("FulFillOrder : Sending ActorStatus to agent {} for order Id {}",
-                //        agentid, orderId);
-                agentMap.get(agentid).tell(new Agent.AvailableRequest(orderId, getContext().getSelf()));
-                this.agentReqList.add(agentid);
-                break;
+
+        for(Integer aId: Shared.agentStatusMap.keySet())
+        {
+            if(Shared.agentStatusMap.get(aId).equals(DeliveryAgentStatus.available))
+            {
+                if (!this.agentReqList.contains(aId)) {
+                    // getContext().getLog().info("FulFillOrder : Sending ActorStatus to agent {} for order Id {}",
+                    //        agentid, orderId);
+                    Shared.agentMap.get(aId).tell(new Agent.AvailableRequest(orderId, getContext().getSelf()));
+                    this.agentReqList.add(aId);
+                    break;
+                }
             }
         }
-        /*
-         * agentMap.forEach((agentId, agentRef) -> {
-         * System.out.println("!!!!!!!!!!!!!    " + agentReqList +"  !!!!!!!!!!!!!");
-         * if (!this.agentReqList.contains(agentId)) {
-         * // getContext().getLog().
-         * info("FulFillOrder : Sending ActorStatus to agent {} for order Id {}",
-         * agentId, orderId);
-         * agentRef.tell(new Agent.AvailableRequest(orderId, getContext().getSelf()));
-         * this.agentReqList.add(agentId);
-         * }
-         * });
-         */
+
+
+        // for (Integer agentid : Shared.agentMap.keySet()) {
+        //     if (!this.agentReqList.contains(agentid)) {
+        //         // getContext().getLog().info("FulFillOrder : Sending ActorStatus to agent {} for order Id {}",
+        //         //        agentid, orderId);
+        //         Shared.agentMap.get(agentid).tell(new Agent.AvailableRequest(orderId, getContext().getSelf()));
+        //         this.agentReqList.add(agentid);
+        //         break;
+        //     }
+        // }
     }
 
     private Behavior<Command> onGetOrderCmd(GetOrderCmd getOrderCmd) {

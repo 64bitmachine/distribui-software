@@ -149,7 +149,7 @@ public class DeliveryRoutes {
 					post(() -> entity(
 							Jackson.unmarshaller(PlaceOrder.class),
 							requestOrder -> onSuccess(requestOrder(requestOrder),
-									(placeOrder) -> placeOrder ==null? complete(StatusCodes.GONE)
+									(placeOrder) -> placeOrder == null? complete(StatusCodes.GONE)
 									: complete(StatusCodes.CREATED,placeOrder,Jackson.marshaller())))))));
 
 	/**
