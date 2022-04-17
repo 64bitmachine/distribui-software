@@ -16,7 +16,7 @@ public class WalletService {
     private ArrayList<Customer> customers = new ArrayList<>();
     
     
-    public boolean withdrawBalance(Customer customer) {
+    public synchronized boolean withdrawBalance(Customer customer) {
         Customer c = getCustomer(customer.getCustId());
         if (c == null || c.getAmount() < customer.getAmount()) {
         	
@@ -33,7 +33,7 @@ public class WalletService {
      * update the balance of the customer
      * @param customer
      */
-    public void updateBalance(Customer customer) {
+    public synchronized void updateBalance(Customer customer) {
         for (int i = 0; i < customers.size(); i++) {
             if (customers.get(i).getCustId() == customer.getCustId()) {
                 customers.get(i).setAmount(customers.get(i).getAmount() + customer.getAmount());
@@ -47,7 +47,7 @@ public class WalletService {
      * @param id
      * @return customer object if found else null
      */
-    public Customer getCustomer(int id)
+    public synchronized Customer getCustomer(int id)
     {
         for (int i = 0; i < customers.size(); i++) {
             if (customers.get(i).getCustId() == id) {
@@ -62,7 +62,7 @@ public class WalletService {
      * @return customer list
      */
     
-    public void getCustomerList()
+    public synchronized void getCustomerList()
     {
     	customers = readDB.readCustomerIDFromFile();
     	for(Customer customer : customers) {

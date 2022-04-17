@@ -24,7 +24,7 @@ public class RestaurantService {
 		restaurants = recordInitializer.readInitializerFile();
 	}
 
-	public boolean refillItem(RefillAndAcceptItemDto refill) {
+	public synchronized boolean refillItem(RefillAndAcceptItemDto refill) {
 		
 		Boolean itemExistFlag = false;
 		for(Restaurant restaurant: restaurants)
@@ -47,7 +47,7 @@ public class RestaurantService {
 		return itemExistFlag;
 	}
 
-	public Item acceptOrder(RefillAndAcceptItemDto accept) {
+	public synchronized Item acceptOrder(RefillAndAcceptItemDto accept) {
 	    Item acceptedItem = null;
 		for(Restaurant restaurant: restaurants)
 		{
@@ -69,5 +69,23 @@ public class RestaurantService {
 		return acceptedItem;
 	}
 	
-	
+	public synchronized Integer getRestaurantItem(RefillAndAcceptItemDto refill) {
+		
+		Boolean itemExistFlag = false;
+		for(Restaurant restaurant: restaurants)
+		{
+			if(restaurant.getRestaurantId().equals(refill.getRestId()))
+			{
+				for(Item item: restaurant.getItems())
+				{
+					if(item.getItemId().equals(refill.getItemId()))
+					{
+						return item.getQuantity();
+					}
+				}
+			}
+		}
+		
+		return -1;
+	}
 }

@@ -57,7 +57,7 @@ def testReinitialize(t):
             test_fail()
     except:
         test_fail()
-    #sleep(2)    
+    sleep(2)    
 
 '''
 test case for get agent details
@@ -95,6 +95,7 @@ def testAgentSignIn(t, agentId, statuscode):
             test_fail()
     except:
         test_fail()
+    # sleep(.5)
 
 
 '''
@@ -170,6 +171,12 @@ def testGetOrder(t, orderId, status, agentId, statuscode):
     print("Desired : AgentId =",agentId, "OrderId = " , orderId, "Status=",status)
     try:
         response = requests.get(delivery_url + "/order/" + str(orderId))
+        while status != 'return' and True:  
+            response = requests.get(delivery_url + "/order/" + str(orderId))
+            print(response.json())
+            if response.json()["status"] == status:
+                break
+
         if status == "return":
             return response
         if response.status_code == statuscode:
@@ -299,6 +306,7 @@ if __name__ == "__main__":
     testOrderDelivered(53, 1001, 201)
     testGetOrder(54, 1000, "delivered", 201, 200)
     testGetOrder(55, 1001, "delivered", 202, 200)
+    #sleep(1)
     testGetOrder(51, 1002, "assigned", 203, 200)
     testGetOrder(56, 1003, "assigned", 201, 200)
     testGetOrder(57, 1004, "assigned", 202, 200)
@@ -361,5 +369,17 @@ if __name__ == "__main__":
     testRequestOrder(101, 301, 101, 2, 1, 201)
     testOrderDelivered(102, 1000, 201)
     testGetOrder(103, 1000, "unassigned", -1, 200)
+
+    # ---------------------  composite test 7 ------------------
+    testReinitialize(104)
+    wallet.testReinitialize(105)
+    restaurant.testReinitialize(106)
+    testRequestOrder(107, 301, 101, 2, 12, 410)
+    testRequestOrder(108, 302, 101, 2, 1, 201)
+    testAgentSignIn(109, 201, 201)
+    testAgentSignIn(110, 202, 201)
+    testGetOrder(111, 1000, "rejected", -1, 200)
+    testGetOrder(112, 1001, "assigned", 201, 200)
+
 
     print_box("\033[93mPublic Testcases (Project 1 Phase 1) \033[1;32;40m")

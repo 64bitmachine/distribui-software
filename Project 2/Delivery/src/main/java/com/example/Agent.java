@@ -3,7 +3,7 @@ package com.example;
 import com.example.FulFillOrder.AgentIsAvailableCmd;
 import com.example.dto.DeliveryAgent;
 import com.example.dto.DeliveryAgentStatus;
-
+import com.example.Delivery.AgentSignInOutResponse;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 
@@ -54,9 +54,10 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
      */
     public static final class SignInOut implements AgentCommand {
         final boolean isSignIn;
-
-        SignInOut(boolean isSignIn) {
+        ActorRef<AgentSignInOutResponse> replyTo;
+        SignInOut(ActorRef<AgentSignInOutResponse> replyTo,boolean isSignIn) {
             this.isSignIn = isSignIn;
+            this.replyTo = replyTo;
         }
     }
     public static final class Reset implements AgentCommand {}
@@ -147,9 +148,9 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
         if (orderId != null && orderId.equals(free.orderId)) {
             Shared.agentStatusMap.put(agentId,DeliveryAgentStatus.available);
             orderId = null;
-            /** Inform Delivery Agent here */
-            deliveryRef.tell(new Delivery.AgentIsFree(agentId, getContext().getSelf()));
         }
+        /** Inform Delivery Agent here */
+        deliveryRef.tell(new Delivery.AgentIsFree(agentId, getContext().getSelf()));
         return Behaviors.same();
     }
 
@@ -164,6 +165,7 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
                 // getContext().getLog().info("Agent with Id {} has signed out", agent.getAgentId());
             }
         }
+        signIn.replyTo.tell(new AgentSignInOutResponse());
         return Behaviors.same();
     }
 
@@ -175,11 +177,11 @@ public class Agent extends AbstractBehavior<Agent.AgentCommand> {
             orderId = request.orderId;
            //agent.setStatus(DeliveryAgentStatus.unavailable);
             Shared.agentStatusMap.put(agentId,DeliveryAgentStatus.unavailable);
-            request.replyTo.tell(new AgentIsAvailableCmd(agentId));
+            request.replyTo.tell(new AgentIsAvailableCmd(agentId,true));
         } else {
             // agent is unavailable
             // getContext().getLog().info("Agent with Id {} is not available", agent.getAgentId());
-            request.replyTo.tell(new AgentIsAvailableCmd( null));
+            request.replyTo.tell(new AgentIsAvailableCmd( agentId,false));
         }
         return Behaviors.same();
     }

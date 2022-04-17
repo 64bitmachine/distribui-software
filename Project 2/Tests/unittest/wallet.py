@@ -39,7 +39,7 @@ def testGetBalance(t, custId, balance, statuscode):
         response = requests.get(wallet_url + "/balance/" + str(custId))
         if statuscode == 144:
             return response
-        if response.status_code == statuscode and response.json()["custId"] == custId and response.json()["amount"] == balance:
+        if response.status_code == statuscode and response.json()["custId"] == custId and response.json()["balance"] == balance:
             test_pass()
         else:
             test_fail()

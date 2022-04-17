@@ -18,6 +18,7 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 
+
 /**
  * Delivery Actor
  */
@@ -60,9 +61,10 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
      */
     public final static class AgentAssigned implements Command {
         public final Integer orderId;
-
-        public AgentAssigned(Integer orderId) {
+        public final Integer agentId;
+        public AgentAssigned(Integer orderId, Integer agentId) {
             this.orderId = orderId;
+            this.agentId = agentId;
         }
     }
 
@@ -225,10 +227,10 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         });
         orderMap.clear();
         Shared.agentMap.forEach((k, v) -> v.tell(new Agent.Reset()));
-        for(Integer aId : Shared.agentStatusMap.keySet())
-        {
-            Shared.agentStatusMap.put(aId,DeliveryAgentStatus.signed_out);
-        }
+        // for(Integer aId : Shared.agentStatusMap.keySet())
+        // {
+        //     Shared.agentStatusMap.put(aId,DeliveryAgentStatus.signed_out);
+        // }
         command.replyTo.tell(new ReInitializeResponse());
         return this;
     }
@@ -255,9 +257,23 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
     private Behavior<Command> onAgentIsFree(AgentIsFree agentIsFree) {
         if (agentIsFree.agentRef.toString().equals(Shared.agentMap.get(agentIsFree.agentId).toString())) {
-            TrackOrder waitingOrder = getWaitingOrder();
+            TrackOrder waitingOrder = null;
+            Integer waitingOrderId = null;
+            for (Integer orderId : orderMap.keySet()) {
+                TrackOrder order = orderMap.get(orderId);
+                // System.out.println("############" + orderId +" ####" + order.getStatus());
+                if (order.getStatus().equals(OrderStatus.unassigned)) {
+                    waitingOrder =  order;
+                    waitingOrderId = orderId;
+                    break;
+                }
+            }
+
+            // System.out.println("agent id " + agentIsFree.agentId + " order id " + waitingOrderId);
+
             if (waitingOrder != null) {
                 // getContext().getLog().info("DeliveryAgent : Agent {} is Free", agentIsFree.agentId);
+                orderMap.get(waitingOrderId).setStatus(OrderStatus.agentassigning);
                 waitingOrder.getOrderRef().tell(new FulFillOrder.AssignAgent(agentIsFree.agentId));
             }
         }
@@ -283,21 +299,31 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
     }
 
     private Behavior<Command> onAgentAssigned(AgentAssigned agentAssigned) {
-        orderMap.get(agentAssigned.orderId).setStatus(OrderStatus.assigned);
+        if(agentAssigned.agentId != null)
+        {
+            orderMap.get(agentAssigned.orderId).setStatus(OrderStatus.assigned);
+        }
+        else
+        {
+            if(orderMap.get(agentAssigned.orderId).getStatus().equals(OrderStatus.agentassigning))
+            {
+                orderMap.get(agentAssigned.orderId).setStatus(OrderStatus.unassigned);
+            }
+        }
         return Behaviors.same();
     }
 
     private Behavior<Command> onAgentSignInOut(AgentSignInOutCommand agentSignInCmd) {
 
-        Shared.agentMap.get(agentSignInCmd.agentId).tell(new Agent.SignInOut(agentSignInCmd.isSignIn));
+        Shared.agentMap.get(agentSignInCmd.agentId).tell(new Agent.SignInOut(agentSignInCmd.replyTo,agentSignInCmd.isSignIn));
 
         // providing the response to the client
-        agentSignInCmd.replyTo.tell(new AgentSignInOutResponse());
+        // agentSignInCmd.replyTo.tell(new AgentSignInOutResponse());
         // System.out.println("****************** ****************   "  +agentSignInCmd.agentId );
         // checking if request is signin and tryign to notify waiting order about the agent signin
         if (agentSignInCmd.isSignIn) {
             TrackOrder waitingOrder = getWaitingOrder();
-            // System.out.println("****************** ****************   "  +agentSignInCmd.agentId +" $$ "+waitingOrder);
+            //  System.out.println("****************** ****************   "  +agentSignInCmd.agentId +" $$ "+waitingOrder);
             if (waitingOrder != null) {
                 // getContext().getLog().info(
                  //       "Notifying a waiting fulfillorder actor about DeliveryAgent : Agent {} is Available",
@@ -336,7 +362,9 @@ public class Delivery extends AbstractBehavior<Delivery.Command> {
         ActorRef<FulFillOrder.Command> orderActor = getContext().spawn(
                 FulFillOrder.create(reqOrder, orderId),
                 "Order-" + orderId);
+        
         orderMap.put(orderId, new TrackOrder(orderActor, OrderStatus.unassigned));
+        // System.out.println("oRDER CREATED :" + orderId + "STATUS :" + orderMap.get(orderId).getStatus());
         orderId++;
 
         return this;

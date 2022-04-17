@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rathod.wallet.entity.Customer;
+import com.rathod.wallet.entity.CustomerDto;
 import com.rathod.wallet.service.WalletService;
 
 import lombok.AllArgsConstructor;
@@ -49,15 +50,16 @@ public class WalletController {
      * @return the customer with the given number
      */
     @RequestMapping(value = "/balance/{customerId}", method = RequestMethod.GET)
-    public ResponseEntity<Customer> balance(@PathVariable("customerId") int customerId) {
+    public ResponseEntity<CustomerDto> balance(@PathVariable("customerId") int customerId) {
         Customer customer = walletService.getCustomer(customerId);
 
         if (customer == null) {
-            return new ResponseEntity<Customer>(
+            return new ResponseEntity<CustomerDto>(
             		
             		HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<Customer>(customer, HttpStatus.OK);
+        CustomerDto responsedto = new CustomerDto(customerId, customer.getAmount());
+        return new ResponseEntity<CustomerDto>(responsedto, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/reInitialize", method = RequestMethod.POST)
